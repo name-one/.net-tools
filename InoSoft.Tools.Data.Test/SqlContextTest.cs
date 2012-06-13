@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using InoSoft.Tools;
+﻿using System.Data.SqlClient;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace InoSoft.Tools.Data.Test
@@ -14,7 +10,25 @@ namespace InoSoft.Tools.Data.Test
         public void GetHumans()
         {
             var context = CreateSqlContext();
-            var res = context.ProceduresProxy.GetHumans();
+
+            Human[] testHumans = new Human[]
+            {
+                new Human{Id = 1, FirstName = "Josef", LastName = "Kobzon"},
+                new Human{Id = 2, FirstName = "Sofia", LastName = "Rotaru"},
+                new Human{Id = 3, FirstName = "Larisa", LastName = "Dolina"}
+            };
+
+            context.Execute("TRUNCATE TABLE Human");
+            foreach (var item in testHumans)
+            {
+                context.Execute("INSERT INTO Human VALUES(@id, @firstName, @lastName)",
+                    new SqlParameter("id", item.Id),
+                    new SqlParameter("firstName", item.FirstName),
+                    new SqlParameter("lastName", item.LastName));
+            }
+
+            var resultHumans = context.ProceduresProxy.GetHumans();
+            Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
         }
 
         private SqlContext<IProceduresProxy> CreateSqlContext()

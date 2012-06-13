@@ -8,8 +8,8 @@
     <ProjectGuid>{52CABCDD-0D54-4301-BCAE-100040B04133}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>InoSoft.Tools.AsyncProcessor</RootNamespace>
-    <AssemblyName>InoSoft.Tools.AsyncProcessor</AssemblyName>
+    <RootNamespace>InoSoft.Tools</RootNamespace>
+    <AssemblyName>InoSoft.Tools</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -40,7 +40,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArrayExtensions.cs" />
     <Compile Include="AsyncProcessor.cs" />
+    <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serialization\ArraySerializer.cs" />
     <Compile Include="Serialization\BoolSerializer.cs" />

@@ -38,6 +38,7 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -51,14 +52,17 @@
     <Compile Include="SqlContextTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
-      <Project>{52CABCDD-0D54-4301-BCAE-100040B04133}</Project>
-      <Name>InoSoft.Tools.AsyncProcessor</Name>
-    </ProjectReference>
     <ProjectReference Include="..\InoSoft.Tools.Data\InoSoft.Tools.Data.csproj">
       <Project>{EE3919A0-1A5B-4907-9767-AFDC5E1F1AEE}</Project>
       <Name>InoSoft.Tools.Data</Name>
     </ProjectReference>
+    <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
+      <Project>{52CABCDD-0D54-4301-BCAE-100040B04133}</Project>
+      <Name>InoSoft.Tools</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Database.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
