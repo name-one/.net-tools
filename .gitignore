@@ -1,0 +1,9 @@
+bin
+obj
+TestResults
+*.exe
+*.suo
+*.user
+*.trx
+*.vsmdi
+*.testsettings
