@@ -105,12 +105,12 @@ namespace InoSoft.Tools.Data
         }
     }
 
-    public class SqlContext<TProceduresProxy> : SqlContext
+    public class SqlContext<TProcedures> : SqlContext
     {
         public SqlContext(string connectionString)
             : base(connectionString)
         {
-            Type proceduresProxyType = typeof(TProceduresProxy);
+            Type proceduresProxyType = typeof(TProcedures);
             CSharpCodeProvider codeProvider = new CSharpCodeProvider();
             CodeTypeDeclaration classCode = new CodeTypeDeclaration("ProceduresProxy")
             {
@@ -180,17 +180,17 @@ namespace InoSoft.Tools.Data
             compileUnit.ReferencedAssemblies.Add("System.Data.dll");
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(AsyncProcessor<>)).Location);
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(SqlContext)).Location);
-            compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(TProceduresProxy)).Location);
+            compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(TProcedures)).Location);
             CompilerParameters compilerParameters = new CompilerParameters
             {
                 GenerateExecutable = false,
                 GenerateInMemory = true
             };
             var compileResult = codeProvider.CompileAssemblyFromDom(compilerParameters, compileUnit);
-            ProceduresProxy = (TProceduresProxy)compileResult.CompiledAssembly.CreateInstance("InoSoft.Tools.Data.ProceduresProxy");
-            ProceduresProxy.GetType().GetField("SqlContext").SetValue(ProceduresProxy, this);
+            Procedures = (TProcedures)compileResult.CompiledAssembly.CreateInstance("InoSoft.Tools.Data.ProceduresProxy");
+            Procedures.GetType().GetField("SqlContext").SetValue(Procedures, this);
         }
 
-        public TProceduresProxy ProceduresProxy { get; private set; }
+        public TProcedures Procedures { get; private set; }
     }
 }

@@ -49,7 +49,7 @@
   <ItemGroup>
     <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
       <Project>{52CABCDD-0D54-4301-BCAE-100040B04133}</Project>
-      <Name>InoSoft.Tools.AsyncProcessor</Name>
+      <Name>InoSoft.Tools</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

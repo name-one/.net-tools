@@ -27,7 +27,7 @@ namespace InoSoft.Tools.Data.Test
                     new SqlParameter("lastName", item.LastName));
             }
 
-            var resultHumans = context.ProceduresProxy.GetHumans();
+            var resultHumans = context.Procedures.GetHumans();
             Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
         }
 

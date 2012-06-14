@@ -47,6 +47,7 @@
     <Compile Include="Connection.cs" />
     <Compile Include="InvokeHelper.cs" />
     <Compile Include="ClientContext.cs" />
+    <Compile Include="RequestException.cs" />
     <Compile Include="ServiceContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
