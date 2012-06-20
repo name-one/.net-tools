@@ -6,6 +6,8 @@
 
         int GetHumansCount();
 
+        void AddHuman(long? id, string firstName, string lastName);
+
         Human GetHumanById(long id);
     }
 }
