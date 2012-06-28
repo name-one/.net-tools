@@ -5,11 +5,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools", "InoSoft.To
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Data", "InoSoft.Tools.Data\InoSoft.Tools.Data.csproj", "{EE3919A0-1A5B-4907-9767-AFDC5E1F1AEE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Data.Test", "InoSoft.Tools.Data.Test\InoSoft.Tools.Data.Test.csproj", "{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Net", "InoSoft.Tools.Net\InoSoft.Tools.Net.csproj", "{A9187D23-A168-4071-8CC9-CF50E336D14B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.SqlVersion", "InoSoft.Tools.SqlVersion\InoSoft.Tools.SqlVersion.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "InoSoft.Tools.SqlVersion.Setup", "InoSoft.Tools.SqlVersion.Setup\InoSoft.Tools.SqlVersion.Setup.vdproj", "{F7248A6B-9D5D-408E-9ADF-521FEA18B224}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,26 +39,6 @@ Global
 		{EE3919A0-1A5B-4907-9767-AFDC5E1F1AEE}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{EE3919A0-1A5B-4907-9767-AFDC5E1F1AEE}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{EE3919A0-1A5B-4907-9767-AFDC5E1F1AEE}.Release|x86.ActiveCfg = Release|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{F5FC4A14-A16C-44D7-9556-D2B7CD1BDCBC}.Release|x86.ActiveCfg = Release|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{A9187D23-A168-4071-8CC9-CF50E336D14B}.Release|x86.ActiveCfg = Release|Any CPU
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Debug|Mixed Platforms.Build.0 = Debug|x86
@@ -71,6 +49,12 @@ Global
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|Mixed Platforms.Build.0 = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.ActiveCfg = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.Build.0 = Release|x86
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Debug|Any CPU.ActiveCfg = Debug
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Debug|Mixed Platforms.ActiveCfg = Debug
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Debug|x86.ActiveCfg = Debug
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Release|Any CPU.ActiveCfg = Release
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Release|Mixed Platforms.ActiveCfg = Release
+		{F7248A6B-9D5D-408E-9ADF-521FEA18B224}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

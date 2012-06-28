@@ -13,7 +13,7 @@ using Microsoft.CSharp;
 namespace InoSoft.Tools.Data
 {
     /// <summary>
-    /// Context for executing SQL queries
+    /// Context for executing SQL queries.
     /// </summary>
     /// <remarks>
     /// Works synchronously, but in separate thread. Only one thread and one execution queue are created,
@@ -29,9 +29,9 @@ namespace InoSoft.Tools.Data
         private DbContext _dbContext;
 
         /// <summary>
-        /// Creates SqlContext
+        /// Creates SqlContext.
         /// </summary>
-        /// <param name="connectionString">SQL connection string, which context will use</param>
+        /// <param name="connectionString">SQL connection string, which context will use.</param>
         public SqlContext(string connectionString)
         {
             _dbContext = new DbContext(connectionString);
@@ -41,9 +41,9 @@ namespace InoSoft.Tools.Data
         /// <summary>
         /// Executes SQL command, which returns array of elements.
         /// </summary>
-        /// <param name="elementType">Type of elements or null if we don't need to return query result</param>
-        /// <param name="sql">SQL query string</param>
-        /// <param name="parameters">Optional named parameters</param>
+        /// <param name="elementType">Type of elements or null if we don't need to return query result.</param>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="parameters">Optional named parameters.</param>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
             // Create encapsulated query and push it into queue
@@ -73,8 +73,8 @@ namespace InoSoft.Tools.Data
         /// <summary>
         /// Executes SQL query, which returns nothing.
         /// </summary>
-        /// <param name="sql">SQL query string</param>
-        /// <param name="parameters">Optional named parameters</param>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="parameters">Optional named parameters.</param>
         public void Execute(string sql, params object[] parameters)
         {
             Execute(null, sql, parameters);
@@ -83,17 +83,17 @@ namespace InoSoft.Tools.Data
         /// <summary>
         /// Executes SQL command, which returns array of elements.
         /// </summary>
-        /// <param name="sql">SQL query string</param>
-        /// <param name="parameters">Optional named parameters</param>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="parameters">Optional named parameters.</param>
         public T[] Execute<T>(string sql, params object[] parameters)
         {
             return Execute(typeof(T), sql, parameters).Cast<T>().ToArray();
         }
 
         /// <summary>
-        /// Processes SQL queries from queue
+        /// Processes SQL queries from queue.
         /// </summary>
-        /// <param name="item">Encapsulated query</param>
+        /// <param name="item">Encapsulated query.</param>
         protected override void ProcessItem(SqlQuery item)
         {
             try
@@ -116,9 +116,9 @@ namespace InoSoft.Tools.Data
     }
 
     /// <summary>
-    /// Context for executing SQL queries with ability to call stored procedures using interface with definitons
+    /// Context for executing SQL queries with ability to call stored procedures using interface with definitons.
     /// </summary>
-    /// <typeparam name="TProcedures">Type, which has stored procedures definitions (using interface is required)</typeparam>
+    /// <typeparam name="TProcedures">Type, which has stored procedures definitions (using interface is required).</typeparam>
     /// <remarks>
     /// Procedures definitions interface is very convenient to use - you don't have to write or generate
     /// lots of repeatable code to call stored procedures in CLR style. All code is automatically generated
@@ -127,9 +127,9 @@ namespace InoSoft.Tools.Data
     public class SqlContext<TProcedures> : SqlContext
     {
         /// <summary>
-        /// Creates SqlContext
+        /// Creates SqlContext.
         /// </summary>
-        /// <param name="connectionString">SQL connection string, which context will use</param>
+        /// <param name="connectionString">SQL connection string, which context will use.</param>
         public SqlContext(string connectionString)
             : base(connectionString)
         {
@@ -276,7 +276,7 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Gets stored procedures proxy, which is used to call them on the database
+        /// Gets stored procedures proxy, which is used to call them on the database.
         /// </summary>
         public TProcedures Procedures { get; private set; }
     }
