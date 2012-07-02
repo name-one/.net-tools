@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using InoSoft.Tools.Data;
 
 namespace InoSoft.Tools.SqlVersion
@@ -89,15 +91,33 @@ namespace InoSoft.Tools.SqlVersion
 
         private void Increment(string versionSql, SqlContext context)
         {
-            string[] queries;
+            var queries = new List<string>();
             using (var file = File.OpenText(Path.Combine(Path.GetDirectoryName(RepositoryPath), versionSql)))
             {
-                queries = file.ReadToEnd().Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(q => q.Trim()).Where(q => q != "").ToArray();
+                var sb = new StringBuilder();
+                while (!file.EndOfStream)
+                {
+                    var line = file.ReadLine().Trim();
+                    if (line.ToUpper() != "GO")
+                    {
+                        sb.AppendLine(line);
+                    }
+                    else
+                    {
+                        queries.Add(sb.ToString());
+                        sb.Clear();
+                    }
+                }
+                queries.Add(sb.ToString());
             }
 
             foreach (var query in queries)
             {
+                if (query.Trim() == "")
+                {
+                    continue;
+                }
+
                 try
                 {
                     context.Execute(query);

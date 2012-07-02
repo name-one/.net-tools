@@ -28,7 +28,7 @@ namespace InoSoft.Tools.SqlVersion
             }
         }
 
-        public void AddVersion(string scriptPath, bool hasSchema, bool hasData)
+        public void AddVersion(string scriptPath)
         {
             this.Versions.Add(scriptPath);
             ++this.LastVersion;

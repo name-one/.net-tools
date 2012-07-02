@@ -40,7 +40,7 @@ namespace InoSoft.Tools.SqlVersion
                         if (dictionary.ContainsKey("repo") && dictionary.ContainsKey("sql"))
                         {
                             Repository repository = new Repository();
-                            repository.AddVersion(dictionary["sql"], true, true);
+                            repository.AddVersion(dictionary["sql"]);
                             if (repository.Save(dictionary["repo"]))
                             {
                                 return 0;
@@ -53,28 +53,18 @@ namespace InoSoft.Tools.SqlVersion
                             break;
                         }
                     case "commit":
-                        if (dictionary.ContainsKey("repo") && dictionary.ContainsKey("sql") && dictionary.ContainsKey("content"))
+                        if (dictionary.ContainsKey("repo") && dictionary.ContainsKey("sql"))
                         {
                             Repository repository = Repository.FromFile(dictionary["repo"]);
                             if (repository != null)
                             {
-                                bool hasSchema = dictionary["content"].ToLower().Contains("s");
-                                bool hasData = dictionary["content"].ToLower().Contains("d");
-                                if (!hasSchema && !hasData)
+                                repository.AddVersion(dictionary["sql"]);
+                                if (repository.Save(dictionary["repo"]))
                                 {
-                                    Console.WriteLine("Versions with no data and no schema are not allowed!!!");
-                                    return 1;
+                                    return 0;
                                 }
-                                else
-                                {
-                                    repository.AddVersion(dictionary["sql"], hasSchema, hasData);
-                                    if (repository.Save(dictionary["repo"]))
-                                    {
-                                        return 0;
-                                    }
-                                    Console.WriteLine("Repository save failed!!!");
-                                    return 1;
-                                }
+                                Console.WriteLine("Repository save failed!!!");
+                                return 1;
                             }
                             else
                             {
@@ -95,7 +85,9 @@ namespace InoSoft.Tools.SqlVersion
                                 RepositoryPath = dictionary["repo"],
                                 ConnectionString = dictionary["connection"]
                             }.Save(dictionary["copy"]))
+                            {
                                 return 0;
+                            }
                             Console.WriteLine("Working copy save failed!!!");
                             return 1;
                         }
