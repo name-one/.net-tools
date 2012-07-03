@@ -48,7 +48,25 @@ namespace InoSoft.Tools.Net
 
                 memoryStream = new MemoryStream();
                 BinaryWriter writer = new BinaryWriter(memoryStream);
-                object result = methodInfo.Invoke(instance, args);
+                object result = null;
+
+                try
+                {
+                    result = methodInfo.Invoke(instance, args);
+                    SendInt(stream, encryptor, 0);
+                }
+                catch (RequestException ex)
+                {
+                    SendInt(stream, encryptor, 1);
+                    SendInt(stream, encryptor, ex.ErrorCode);
+                    return;
+                }
+                catch
+                {
+                    SendInt(stream, encryptor, 2);
+                    return;
+                }
+
                 if (methodInfo.ReturnType != typeof(void))
                 {
                     Serializer.FromType(methodInfo.ReturnType).SerializeData(result, writer);
@@ -114,6 +132,17 @@ namespace InoSoft.Tools.Net
                     if (decryptor != null)
                     {
                         resultBytes = decryptor.Decrypt(resultBytes);
+                    }
+
+                    int errorCode = ReceiveInt(stream, decryptor);
+                    if (errorCode == 1)
+                    {
+                        errorCode = ReceiveInt(stream, decryptor);
+                        throw new RequestException(errorCode);
+                    }
+                    else if (errorCode == 2)
+                    {
+                        throw new Exception("Remote method encountered unhandled exception.");
                     }
 
                     memoryStream = new MemoryStream(resultBytes);
