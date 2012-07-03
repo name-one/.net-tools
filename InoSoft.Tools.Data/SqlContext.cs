@@ -159,6 +159,7 @@ namespace InoSoft.Tools.Data
                 // Determine type of elements to return and appropriate array type (e.g. String and String[])
                 Type elementType = method.ReturnType.IsArray ? method.ReturnType.GetElementType() : method.ReturnType;
                 Type arrayType = elementType.MakeArrayType();
+
                 // Define method
                 CodeMemberMethod methodCode = new CodeMemberMethod
                 {
@@ -199,9 +200,8 @@ namespace InoSoft.Tools.Data
                     methodCode.Parameters.Add(new CodeParameterDeclarationExpression(p.ParameterType, p.Name));
                 }
                 // Invoke SQL query
-                string invokeMethodName = elementType != typeof(void) ? string.Format("Execute<{0}>", elementType) : "Execute";
-                var invokeCode = new CodeMethodInvokeExpression(new CodeSnippetExpression("SqlContext"),
-                    invokeMethodName, invokeParamsCode.ToArray());
+                var invokeCode = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeSnippetExpression("SqlContext"),
+                    "Execute", elementType == typeof(void) ? new CodeTypeReference[0] : new[] { new CodeTypeReference(elementType) }), invokeParamsCode.ToArray());
                 if (method.ReturnType == typeof(void))
                 {
                     // If method returns nothing - just invoke
@@ -220,13 +220,13 @@ namespace InoSoft.Tools.Data
                     {
                         // If method returns single value and has SingleResult attribute - return Single
                         methodCode.Statements.Add(new CodeMethodReturnStatement(
-                            new CodeSnippetExpression(string.Format("result.Single<{0}>()", elementType))));
+                            new CodeSnippetExpression("result.Single()")));
                     }
                     else
                     {
                         // If method returns single value - return SingleOrDefault
                         methodCode.Statements.Add(new CodeMethodReturnStatement(
-                            new CodeSnippetExpression(string.Format("result.SingleOrDefault<{0}>()", elementType))));
+                            new CodeSnippetExpression("result.SingleOrDefault()")));
                     }
                 }
                 // Add defined method to class
