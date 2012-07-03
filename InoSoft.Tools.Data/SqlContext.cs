@@ -258,7 +258,6 @@ namespace InoSoft.Tools.Data
             compileUnit.Namespaces.Add(namespaceCode);
             compileUnit.ReferencedAssemblies.Add("System.dll");
             compileUnit.ReferencedAssemblies.Add("System.Core.dll");
-            compileUnit.ReferencedAssemblies.Add("System.Linq.dll");
             compileUnit.ReferencedAssemblies.Add("System.Data.dll");
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(AsyncProcessor<>)).Location);
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(SqlContext)).Location);
