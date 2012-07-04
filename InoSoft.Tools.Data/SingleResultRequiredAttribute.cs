@@ -7,7 +7,7 @@ namespace InoSoft.Tools.Data
     /// Otherwise, exception will be thrown. Use only in methods which return single object, not array.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
-    public class SingleResultAttribute : Attribute
+    public class SingleResultRequiredAttribute : Attribute
     {
     }
 }
