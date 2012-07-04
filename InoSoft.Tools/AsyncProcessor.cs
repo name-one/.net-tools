@@ -7,27 +7,43 @@ namespace InoSoft.Tools
     public abstract class AsyncProcessor<T>
     {
         private Thread _dispatcherThread;
-        private EventWaitHandle _queueHasItemsEvent;
-        private Queue<T> _queue;
+        private readonly EventWaitHandle _queueHasItemsEvent;
+        private readonly Queue<T> _queue;
+        private bool _isRunning;
 
         protected AsyncProcessor()
         {
             _queue = new Queue<T>();
             _queueHasItemsEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
-            _dispatcherThread = new Thread(DispatcherThread) { IsBackground = true };
         }
 
         public void Start()
         {
+            _isRunning = true;
+            _dispatcherThread = new Thread(RunDispatcher) { IsBackground = true };
             _dispatcherThread.Start();
+        }
+
+        public void Stop()
+        {
+            _isRunning = false;
+            _dispatcherThread.Join();
+            lock (_queue)
+            {
+                _queue.Clear();
+                _queueHasItemsEvent.Reset();
+            }
         }
 
         public void EnqueueItem(T item)
         {
             lock (_queue)
             {
-                _queue.Enqueue(item);
-                _queueHasItemsEvent.Set();
+                if (_isRunning)
+                {
+                    _queue.Enqueue(item);
+                    _queueHasItemsEvent.Set();
+                }
             }
         }
 
@@ -37,9 +53,9 @@ namespace InoSoft.Tools
         {
         }
 
-        private void DispatcherThread()
+        private void RunDispatcher()
         {
-            while (true)
+            while (_isRunning)
             {
                 _queueHasItemsEvent.WaitOne();
                 T item = default(T);

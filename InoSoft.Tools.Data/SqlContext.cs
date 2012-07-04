@@ -26,7 +26,7 @@ namespace InoSoft.Tools.Data
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlQuery>
     {
-        private DbContext _dbContext;
+        private readonly DbContext _dbContext;
 
         /// <summary>
         /// Creates SqlContext.
@@ -47,7 +47,7 @@ namespace InoSoft.Tools.Data
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
             // Create encapsulated query and push it into queue
-            SqlQuery query = new SqlQuery
+            var query = new SqlQuery
             {
                 ElementType = elementType,
                 Sql = sql,
@@ -58,16 +58,14 @@ namespace InoSoft.Tools.Data
             // Wait until query will be executed
             query.WaitSignal();
 
-            if (query.Exception == null)
-            {
-                // Return query result
-                return query.Result;
-            }
-            else
+            if (query.Exception != null)
             {
                 // Rethrow exception if it occured
                 throw query.Exception;
             }
+
+            // Return query result
+            return query.Result;
         }
 
         /// <summary>
@@ -142,9 +140,9 @@ namespace InoSoft.Tools.Data
             }
 
             // Generate procedures proxy code
-            CSharpCodeProvider codeProvider = new CSharpCodeProvider();
+            var codeProvider = new CSharpCodeProvider();
             // Declare class ProceduresProxy
-            CodeTypeDeclaration classCode = new CodeTypeDeclaration("ProceduresProxy")
+            var classCode = new CodeTypeDeclaration("ProceduresProxy")
             {
                 IsClass = true,
                 Attributes = MemberAttributes.Public
@@ -161,16 +159,16 @@ namespace InoSoft.Tools.Data
                 Type arrayType = elementType.MakeArrayType();
 
                 // Define method
-                CodeMemberMethod methodCode = new CodeMemberMethod
+                var methodCode = new CodeMemberMethod
                 {
                     Name = method.Name,
                     Attributes = MemberAttributes.Public,
                     ReturnType = new CodeTypeReference(method.ReturnType)
                 };
                 // Define parameters
-                List<CodeExpression> invokeParamsCode = new List<CodeExpression>();
+                var invokeParamsCode = new List<CodeExpression>();
                 // SQL code for executing procedure with name
-                StringBuilder sqlParamsString = new StringBuilder();
+                var sqlParamsString = new StringBuilder();
                 foreach (var p in method.GetParameters())
                 {
                     sqlParamsString.AppendFormat("@{0},", p.Name);
@@ -179,29 +177,31 @@ namespace InoSoft.Tools.Data
                 {
                     sqlParamsString.Length--;
                 }
-                invokeParamsCode.Add(new CodeSnippetExpression(string.Format("\"EXEC {0} {1}\"", method.Name, sqlParamsString)));
+                invokeParamsCode.Add(new CodeSnippetExpression(String.Format("\"EXEC {0} {1}\"", method.Name, sqlParamsString)));
                 // Actual parameters, tranfered via SqlParameters
                 foreach (var p in method.GetParameters())
                 {
                     if (p.ParameterType == typeof(string))
                     {
                         invokeParamsCode.Add(new CodeSnippetExpression(
-                            string.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0} != null ? (object){0} : DBNull.Value)", p.Name)));
+                            String.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0} != null ? (object){0} : DBNull.Value)", p.Name)));
                     }
                     else if (p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         invokeParamsCode.Add(new CodeSnippetExpression(
-                            string.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){0}.Value : DBNull.Value)", p.Name)));
+                            String.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){0}.Value : DBNull.Value)", p.Name)));
                     }
                     else
                     {
-                        invokeParamsCode.Add(new CodeSnippetExpression(string.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0})", p.Name)));
+                        invokeParamsCode.Add(new CodeSnippetExpression(String.Format("new System.Data.SqlClient.SqlParameter(\"{0}\", {0})", p.Name)));
                     }
                     methodCode.Parameters.Add(new CodeParameterDeclarationExpression(p.ParameterType, p.Name));
                 }
                 // Invoke SQL query
-                var invokeCode = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(new CodeSnippetExpression("SqlContext"),
-                    "Execute", elementType == typeof(void) ? new CodeTypeReference[0] : new[] { new CodeTypeReference(elementType) }), invokeParamsCode.ToArray());
+                var invokeCode = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
+                    new CodeSnippetExpression("SqlContext"), "Execute",
+                    elementType == typeof(void) ? new CodeTypeReference[0] : new[] { new CodeTypeReference(elementType) }),
+                    invokeParamsCode.ToArray());
                 if (method.ReturnType == typeof(void))
                 {
                     // If method returns nothing - just invoke
@@ -219,8 +219,7 @@ namespace InoSoft.Tools.Data
                     else if (method.IsDefined(typeof(SingleResultAttribute), false))
                     {
                         // If method returns single value and has SingleResult attribute - return Single
-                        methodCode.Statements.Add(new CodeMethodReturnStatement(
-                            new CodeSnippetExpression("result.Single()")));
+                        methodCode.Statements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression("result.Single()")));
                     }
                     else
                     {
@@ -234,7 +233,7 @@ namespace InoSoft.Tools.Data
             }
 
             // Put proxy type code into namespace and add usings
-            CodeNamespace namespaceCode = new CodeNamespace("InoSoft.Tools.Data");
+            var namespaceCode = new CodeNamespace("InoSoft.Tools.Data");
             namespaceCode.Imports.Add(new CodeNamespaceImport("System"));
             namespaceCode.Imports.Add(new CodeNamespaceImport("System.Collections"));
             namespaceCode.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
@@ -243,8 +242,8 @@ namespace InoSoft.Tools.Data
 
 #if DEBUG
             // Determine generated source code
-            MemoryStream ms = new MemoryStream();
-            StreamWriter sw = new StreamWriter(ms, Encoding.Unicode);
+            var ms = new MemoryStream();
+            var sw = new StreamWriter(ms, Encoding.Unicode);
             codeProvider.GenerateCodeFromNamespace(namespaceCode, sw, new CodeGeneratorOptions());
             sw.Flush();
             byte[] codeBytes = ms.ToArray();
@@ -254,7 +253,7 @@ namespace InoSoft.Tools.Data
 #endif
 
             // Compile temporary assembly
-            CodeCompileUnit compileUnit = new CodeCompileUnit();
+            var compileUnit = new CodeCompileUnit();
             compileUnit.Namespaces.Add(namespaceCode);
             compileUnit.ReferencedAssemblies.Add("System.dll");
             compileUnit.ReferencedAssemblies.Add("System.Core.dll");
@@ -262,7 +261,7 @@ namespace InoSoft.Tools.Data
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(AsyncProcessor<>)).Location);
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(SqlContext)).Location);
             compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(TProcedures)).Location);
-            CompilerParameters compilerParameters = new CompilerParameters
+            var compilerParameters = new CompilerParameters
             {
                 GenerateExecutable = false,
                 GenerateInMemory = true
