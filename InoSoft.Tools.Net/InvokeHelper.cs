@@ -23,7 +23,7 @@ namespace InoSoft.Tools.Net
                 headBytes = decryptor.Decrypt(headBytes);
             }
             byte nameLength = headBytes[0];
-            string name = Encoding.Unicode.GetString(headBytes, 1, nameLength * 2);
+            string name = Encoding.ASCII.GetString(headBytes, 1, nameLength * 2);
             int argsLength = BitConverter.ToInt32(headBytes, 60);
 
             Type type = instance.GetType();
@@ -105,7 +105,7 @@ namespace InoSoft.Tools.Net
                 byte[] argsBytes = memoryStream.ToArray();
                 writer.Close();
 
-                byte[] nameBytes = Encoding.Unicode.GetBytes(name);
+                byte[] nameBytes = Encoding.ASCII.GetBytes(name);
                 byte[] argsLengthBytes = BitConverter.GetBytes(argsBytes.Length);
                 byte[] headBytes = new byte[64];
                 headBytes[0] = (byte)name.Length;
