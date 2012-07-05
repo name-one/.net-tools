@@ -185,7 +185,7 @@ namespace InoSoft.Tools.Net
             return BitConverter.ToInt32(clientIdBytes, 0);
         }
 
-        public static TContract CreateContractProxy<TContract>(Invocator invocator)
+        public static TContract CreateContractProxy<TContract>()
         {
             Type serviceContractType = typeof(TContract);
             CSharpCodeProvider codeProvider = new CSharpCodeProvider();
@@ -245,7 +245,6 @@ namespace InoSoft.Tools.Net
             };
             var compileResult = codeProvider.CompileAssemblyFromDom(compilerParameters, compileUnit);
             var result = (TContract)compileResult.CompiledAssembly.CreateInstance("InoSoft.Tools.Net.Proxy");
-            result.GetType().GetField("Invocator").SetValue(result, invocator);
             result.GetType().GetField("ContractType").SetValue(result, typeof(TContract));
             return result;
         }

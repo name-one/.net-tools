@@ -9,41 +9,46 @@ using System.Threading;
 
 namespace InoSoft.Tools.Net
 {
+    /// <summary>
+    /// Context for server-side communication with clients.
+    /// </summary>
+    /// <typeparam name="TServiceContract">Interface type, which defines service contract (remote calls definitions).</typeparam>
     public class ServiceContext<TServiceContract>
     {
+        protected SymmetricAlgorithm _cryptoAlgorithm;
         private TServiceContract _contractInstance;
         private bool _isRunning;
         private int _port;
         private TcpListener _listener;
         private SortedDictionary<int, Connection> _connections = new SortedDictionary<int, Connection>();
         private int _lastClientId = 1;
-        protected SymmetricAlgorithm _cryptoAlgorithm;
 
+        /// <summary>
+        /// Creates ServiceContext.
+        /// </summary>
+        /// <param name="contractInstance">Object, which will be target for remote calls from clients.</param>
         public ServiceContext(TServiceContract contractInstance)
         {
             _contractInstance = contractInstance;
         }
 
+        /// <summary>
+        /// Raises when client connection fails during initialization.
+        /// </summary>
         public event ExceptionHandler ConnectException;
 
-        public event ClientExceptionHandler InvokeException;
+        /// <summary>
+        /// Raises when client connection fails during invocation because of network problems.
+        /// </summary>
+        public event ConnectionExceptionHandler InvokeException;
 
-        public void Start(int port, string keyFilePath = null)
+        /// <summary>
+        /// Causes service to start listening to client connections.
+        /// </summary>
+        /// <param name="port">Port to listen to.</param>
+        public void Start(int port)
         {
             _port = port;
-            if (keyFilePath != null)
-            {
-                using (var stream = File.OpenRead(keyFilePath))
-                {
-                    byte[] key = stream.ReadAll(32);
-                    byte[] iv = stream.ReadAll(16);
-                    _cryptoAlgorithm = new RijndaelManaged
-                    {
-                        Key = key,
-                        IV = iv
-                    };
-                }
-            }
 
             _isRunning = true;
             _listener = new TcpListener(IPAddress.Any, _port);
@@ -54,11 +59,17 @@ namespace InoSoft.Tools.Net
             thread.Start();
         }
 
+        /// <summary>
+        /// Stops listening to incoming client connections and invocations.
+        /// </summary>
         public void Stop()
         {
             _isRunning = false;
         }
 
+        /// <summary>
+        /// Gets currently alive client connections.
+        /// </summary>
         public Connection[] GetConnections()
         {
             lock (_connections)
@@ -67,6 +78,10 @@ namespace InoSoft.Tools.Net
             }
         }
 
+        /// <summary>
+        /// Gets client connection by ID or null if there is no connection with specified ID.
+        /// </summary>
+        /// <param name="id">Connection ID.</param>
         public Connection GetConnection(int id)
         {
             lock (_connections)
@@ -82,7 +97,11 @@ namespace InoSoft.Tools.Net
             }
         }
 
-        public bool Disconnect(int id)
+        /// <summary>
+        /// Forsibly disconnects specified client.
+        /// </summary>
+        /// <param name="id">ID of client to disconnect.</param>
+        public void Disconnect(int id)
         {
             lock (_connections)
             {
@@ -90,20 +109,37 @@ namespace InoSoft.Tools.Net
                 {
                     _connections[id].IsConnected = false;
                     _connections.Remove(id);
-                    return true;
-                }
-                else
-                {
-                    return false;
                 }
             }
         }
 
+        /// <summary>
+        /// Called when client is connected via TCP.
+        /// </summary>
+        /// <param name="initSignal">Init signal is reserved for callback connection handler.</param>
+        /// <param name="connection">Just created connection.</param>
+        protected virtual void OnClientConnected(int initSignal, Connection connection)
+        {
+            // Begin to listen to invocations asynchronously
+            Thread thread = new Thread(ListenToInvoke);
+            connection.ThreadId = Thread.CurrentThread.ManagedThreadId;
+            thread.IsBackground = true;
+            thread.Start(connection);
+        }
+
+        /// <summary>
+        /// Listens to clients connections.
+        /// </summary>
         private void ListenToConnect()
         {
-            while (true)
+            while (_isRunning)
             {
                 TcpClient tcpClient = _listener.AcceptTcpClient();
+                if (!_isRunning)
+                {
+                    return;
+                }
+
                 try
                 {
                     Connection connection = new Connection
@@ -134,15 +170,11 @@ namespace InoSoft.Tools.Net
             }
         }
 
-        protected virtual void OnClientConnected(int initSignal, Connection connection)
-        {
-            Thread thread = new Thread(ListenToInvoke);
-            connection.ThreadId = Thread.CurrentThread.ManagedThreadId;
-            thread.IsBackground = true;
-            thread.Start(connection);
-        }
-
-        protected void ListenToInvoke(object arg)
+        /// <summary>
+        /// Listens to client invocations.
+        /// </summary>
+        /// <param name="arg">Client connection object.</param>
+        private void ListenToInvoke(object arg)
         {
             Connection connection = (Connection)arg;
             Connection.AddConnectionByThread(connection);
@@ -170,27 +202,47 @@ namespace InoSoft.Tools.Net
         }
     }
 
+    /// <summary>
+    /// Context for server-side communication with clients with callback ability.
+    /// </summary>
+    /// <typeparam name="TServiceContract">Interface type, which defines service contract (remote calls definitions).</typeparam>
+    /// <typeparam name="TCallbackContract">Interface type, which defines callback contract (callback calls definitions).</typeparam>
     public class ServiceContext<TServiceContract, TCallbackContract> : ServiceContext<TServiceContract>
     {
+        /// <summary>
+        /// Creates ServiceContext.
+        /// </summary>
+        /// <param name="contractInstance">Object, which will be target for remote calls from clients.</param>
         public ServiceContext(TServiceContract serviceContractInstance)
             : base(serviceContractInstance)
         {
         }
 
+        /// <summary>
+        /// Extended version of client connection handler, can handle callback connections.
+        /// </summary>
+        /// <param name="initSignal">
+        /// Init signal indicates if connection is regular or callback. Zero is for regular,
+        /// non-zero indicates callback and init signal equals to associated client ID.
+        /// </param>
+        /// <param name="connection">Just created connection.</param>
         protected override void OnClientConnected(int initSignal, Connection connection)
         {
             if (initSignal == 0)
             {
+                // Handle regular connection
                 base.OnClientConnected(initSignal, connection);
             }
             else
             {
-                connection.IsCallback = true;
+                // Handle callback connection
                 Connection clientConnection = GetConnection(initSignal);
                 if (connection != null)
                 {
                     Invocator invocator = new Invocator(connection.Stream, connection.Encryptor, connection.Decryptor);
-                    clientConnection.CallbackContractProxy = InvokeHelper.CreateContractProxy<TCallbackContract>(invocator);
+                    clientConnection.CallbackContractProxy = InvokeHelper.CreateContractProxy<TCallbackContract>();
+                    clientConnection.CallbackContractProxy.GetType().GetField("Invocator")
+                        .SetValue(clientConnection.CallbackContractProxy, invocator);
                 }
             }
         }
