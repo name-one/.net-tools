@@ -23,7 +23,7 @@ namespace InoSoft.Tools.Net
                 headBytes = decryptor.Decrypt(headBytes);
             }
             byte nameLength = headBytes[0];
-            string name = Encoding.ASCII.GetString(headBytes, 1, nameLength * 2);
+            string name = Encoding.ASCII.GetString(headBytes, 1, nameLength);
             int argsLength = BitConverter.ToInt32(headBytes, 60);
 
             Type type = instance.GetType();
@@ -55,14 +55,14 @@ namespace InoSoft.Tools.Net
                     result = methodInfo.Invoke(instance, args);
                     SendInt(stream, encryptor, 0);
                 }
-                catch (RequestException ex)
+                catch (Exception ex)
                 {
-                    SendInt(stream, encryptor, 1);
-                    SendInt(stream, encryptor, ex.ErrorCode);
-                    return;
-                }
-                catch
-                {
+                    if (ex.InnerException is RequestException)
+                    {
+                        SendInt(stream, encryptor, 1);
+                        SendInt(stream, encryptor, ((RequestException)ex.InnerException).ErrorCode);
+                        return;
+                    }
                     SendInt(stream, encryptor, 2);
                     return;
                 }
@@ -109,7 +109,7 @@ namespace InoSoft.Tools.Net
                 byte[] argsLengthBytes = BitConverter.GetBytes(argsBytes.Length);
                 byte[] headBytes = new byte[64];
                 headBytes[0] = (byte)name.Length;
-                Array.Copy(nameBytes, 0, headBytes, 1, name.Length * 2);
+                Array.Copy(nameBytes, 0, headBytes, 1, name.Length);
                 Array.Copy(argsLengthBytes, 0, headBytes, 60, 4);
                 if (encryptor != null)
                 {
@@ -119,6 +119,17 @@ namespace InoSoft.Tools.Net
 
                 stream.Write(headBytes, 0, headBytes.Length);
                 stream.Write(argsBytes, 0, argsBytes.Length);
+
+                int errorCode = ReceiveInt(stream, decryptor);
+                if (errorCode == 1)
+                {
+                    errorCode = ReceiveInt(stream, decryptor);
+                    throw new RequestException(errorCode);
+                }
+                else if (errorCode == 2)
+                {
+                    throw new Exception("Remote method encountered unhandled exception.");
+                }
 
                 byte[] resultLengthBytes = stream.ReadAll(4, blockSize);
                 if (methodInfo.ReturnType != typeof(void))
@@ -132,17 +143,6 @@ namespace InoSoft.Tools.Net
                     if (decryptor != null)
                     {
                         resultBytes = decryptor.Decrypt(resultBytes);
-                    }
-
-                    int errorCode = ReceiveInt(stream, decryptor);
-                    if (errorCode == 1)
-                    {
-                        errorCode = ReceiveInt(stream, decryptor);
-                        throw new RequestException(errorCode);
-                    }
-                    else if (errorCode == 2)
-                    {
-                        throw new Exception("Remote method encountered unhandled exception.");
                     }
 
                     memoryStream = new MemoryStream(resultBytes);
