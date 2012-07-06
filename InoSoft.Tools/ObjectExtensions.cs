@@ -18,6 +18,11 @@ namespace InoSoft.Tools
                 return false;
             }
 
+            if (firstObject is ValueType)
+            {
+                return firstObject.Equals(secondObject);
+            }
+
             foreach (var member in firstObject.GetType().GetMembers())
             {
                 object firstValue;

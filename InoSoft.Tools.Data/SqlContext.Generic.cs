@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -68,13 +69,31 @@ namespace InoSoft.Tools.Data
 
             // Compile temporary assembly
             var compileUnit = new CodeCompileUnit();
+            var assemblyList = new List<Assembly>();
+            assemblyList.Add(Assembly.GetAssembly(typeof(SqlParameter)));
+            assemblyList.Add(Assembly.GetAssembly(typeof(AsyncProcessor<>)));
+            assemblyList.Add(Assembly.GetAssembly(typeof(SqlContext)));
+            assemblyList.Add(Assembly.GetAssembly(typeof(TProcedures)));
+            var referenceNames = new List<AssemblyName>();
+            foreach (var assembly in assemblyList)
+            {
+                referenceNames.AddRange(assembly.GetReferencedAssemblies());
+            }
+            foreach (var assemblyName in referenceNames)
+            {
+                assemblyList.Add(Assembly.ReflectionOnlyLoad(assemblyName.FullName));
+            }
+
             compileUnit.Namespaces.Add(namespaceCode);
-            compileUnit.ReferencedAssemblies.Add("System.dll");
-            compileUnit.ReferencedAssemblies.Add("System.Core.dll");
-            compileUnit.ReferencedAssemblies.Add("System.Data.dll");
-            compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(AsyncProcessor<>)).Location);
-            compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(SqlContext)).Location);
-            compileUnit.ReferencedAssemblies.Add(Assembly.GetAssembly(typeof(TProcedures)).Location);
+            var usedReferences = new HashSet<string>();
+            foreach (var assembly in assemblyList)
+            {
+                if (!usedReferences.Contains(assembly.Location))
+                {
+                    compileUnit.ReferencedAssemblies.Add(assembly.Location);
+                    usedReferences.Add(assembly.Location);
+                }
+            }
             var compilerParameters = new CompilerParameters
             {
                 GenerateExecutable = false,
