@@ -6,13 +6,22 @@ namespace InoSoft.Tools
 {
     public abstract class AsyncProcessor<T>
     {
+        private readonly bool _isBackground;
         private readonly Queue<T> _queue;
         private readonly EventWaitHandle _queueHasItemsEvent;
         private Thread _dispatcherThread;
         private bool _isRunning;
 
-        protected AsyncProcessor()
+        /// <summary>
+        /// Creates AsyncProcessor instance.
+        /// </summary>
+        /// <param name="isBackground">
+        /// Specifies whether the AsyncProcessor instance will be executed in a background thread and Stop() will not block.
+        /// Default is true.
+        /// </param>
+        protected AsyncProcessor(bool isBackground = true)
         {
+            _isBackground = isBackground;
             _queue = new Queue<T>();
             _queueHasItemsEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
@@ -37,14 +46,17 @@ namespace InoSoft.Tools
         public void Start()
         {
             _isRunning = true;
-            _dispatcherThread = new Thread(RunDispatcher) { IsBackground = true };
+            _dispatcherThread = new Thread(RunDispatcher) { IsBackground = _isBackground };
             _dispatcherThread.Start();
         }
 
         public void Stop()
         {
             _isRunning = false;
-            _dispatcherThread.Join();
+            if (!_isBackground)
+            {
+                _dispatcherThread.Join();
+            }
             lock (_queue)
             {
                 _queue.Clear();
