@@ -31,7 +31,7 @@ namespace InoSoft.Tools.SqlVersion
         public void AddVersion(string scriptPath)
         {
             this.Versions.Add(scriptPath);
-            ++this.LastVersion;
+            LastVersion = Versions.Count - 1;
         }
 
         public bool Save(string path)
