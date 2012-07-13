@@ -11,6 +11,7 @@ namespace InoSoft.Tools
         private readonly EventWaitHandle _queueHasItemsEvent;
         private Thread _dispatcherThread;
         private bool _isRunning;
+        private object _processItemLock = new object();
 
         /// <summary>
         /// Creates AsyncProcessor instance.
@@ -48,20 +49,32 @@ namespace InoSoft.Tools
             _isRunning = true;
             _dispatcherThread = new Thread(RunDispatcher) { IsBackground = _isBackground };
             _dispatcherThread.Start();
+
+            OnStart();
         }
 
         public void Stop()
         {
             _isRunning = false;
+            lock (_queue)
+            {
+                _queue.Clear();
+                _queueHasItemsEvent.Set();
+            }
             if (!_isBackground)
             {
                 _dispatcherThread.Join();
             }
-            lock (_queue)
-            {
-                _queue.Clear();
-                _queueHasItemsEvent.Reset();
-            }
+
+            OnStop();
+        }
+
+        protected virtual void OnStart()
+        {
+        }
+
+        protected virtual void OnStop()
+        {
         }
 
         protected virtual void OnProcessItemException(T item, Exception ex)
@@ -90,15 +103,18 @@ namespace InoSoft.Tools
                     }
                 }
 
-                if (hasItem)
+                lock (_processItemLock)
                 {
-                    try
+                    if (hasItem)
                     {
-                        ProcessItem(item);
-                    }
-                    catch (Exception ex)
-                    {
-                        OnProcessItemException(item, ex);
+                        try
+                        {
+                            ProcessItem(item);
+                        }
+                        catch (Exception ex)
+                        {
+                            OnProcessItemException(item, ex);
+                        }
                     }
                 }
             }
