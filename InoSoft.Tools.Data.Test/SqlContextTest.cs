@@ -1,4 +1,5 @@
-﻿using System.Data.SqlClient;
+﻿using System;
+using System.Data.SqlClient;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace InoSoft.Tools.Data.Test
@@ -65,6 +66,61 @@ namespace InoSoft.Tools.Data.Test
 
             Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
         }
+
+        [TestMethod]
+        public void StringOutputs()
+        {
+            var context = CreateSqlContext();
+
+            Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
+            context.Execute("TRUNCATE TABLE Human");
+            InsertIntoHuman(context, testHuman);
+
+            string firstName, lastName;
+            context.Procedures.GetHumanViaOutput(100, out firstName, out lastName);
+            Assert.AreEqual(firstName, testHuman.FirstName);
+            Assert.AreEqual(lastName, testHuman.LastName);
+        }
+
+        [TestMethod]
+        public void VariousOutputs()
+        {
+            var context = CreateSqlContext();
+
+            Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
+            context.Execute("TRUNCATE TABLE Human");
+            InsertIntoHuman(context, testHuman);
+
+            long id;
+            string firstName, lastName;
+            context.Procedures.GetRandomHumanViaOutput(out id, out firstName, out lastName);
+            Assert.AreEqual(id, testHuman.Id);
+            Assert.AreEqual(firstName, testHuman.FirstName);
+            Assert.AreEqual(lastName, testHuman.LastName);
+        }
+
+        //public virtual void GetRandomHumanViaOutput(out long id, out string firstName, out string lastName)
+        //{
+        //    System.Data.SqlClient.SqlParameter idSqlParameter = new System.Data.SqlClient.SqlParameter();
+        //    idSqlParameter.ParameterName = "id";
+        //    idSqlParameter.Value = System.DBNull.Value;
+        //    idSqlParameter.Direction = System.Data.ParameterDirection.Output;
+        //    idSqlParameter.Size = Int32.MaxValue;
+        //    System.Data.SqlClient.SqlParameter firstNameSqlParameter = new System.Data.SqlClient.SqlParameter();
+        //    firstNameSqlParameter.ParameterName = "firstName";
+        //    firstNameSqlParameter.Value = DBNull.Value;
+        //    firstNameSqlParameter.Direction = System.Data.ParameterDirection.Output;
+        //    firstNameSqlParameter.Size = Int32.MaxValue;
+        //    System.Data.SqlClient.SqlParameter lastNameSqlParameter = new System.Data.SqlClient.SqlParameter();
+        //    lastNameSqlParameter.ParameterName = "lastName";
+        //    lastNameSqlParameter.Value = DBNull.Value;
+        //    lastNameSqlParameter.Direction = System.Data.ParameterDirection.Output;
+        //    lastNameSqlParameter.Size = Int32.MaxValue;
+        //    Context.Execute("EXEC GetRandomHumanViaOutput @id output,@firstName output,@lastName output", idSqlParameter, firstNameSqlParameter, lastNameSqlParameter);
+        //    id = ((long)(idSqlParameter.Value));
+        //    firstName = ((string)(firstNameSqlParameter.Value));
+        //    lastName = ((string)(lastNameSqlParameter.Value));
+        //}
 
         private void InsertIntoHuman(SqlContext context, Human human)
         {
