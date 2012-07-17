@@ -33,7 +33,7 @@ namespace InoSoft.Tools.Serialization
             {
                 return new ShortSerializer();
             }
-            else if (type == typeof(int))
+            else if (type == typeof(int) || type.IsEnum)
             {
                 return new IntSerializer();
             }
@@ -97,7 +97,10 @@ namespace InoSoft.Tools.Serialization
             {
                 return new ShortSerializer { IsDataNullable = true };
             }
-            else if (type == typeof(int?))
+            else if (type == typeof(int?) ||
+                type.IsGenericType &&
+                type.GetGenericTypeDefinition() == typeof(Nullable<>) &&
+                type.GetGenericArguments()[0].IsEnum)
             {
                 return new IntSerializer { IsDataNullable = true };
             }
