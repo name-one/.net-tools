@@ -209,22 +209,21 @@ namespace InoSoft.Tools.Data
                     }
                     else
                     {
+                        string paramCasted = p.ParameterType.IsEnum ? String.Format("(({0}){1})", Enum.GetUnderlyingType(p.ParameterType), p.Name) : p.Name;
                         if (p.ParameterType == typeof(string))
                         {
                             invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
-                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {0} != null ? (object){0} : DBNull.Value)",
-                                p.Name)));
+                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {0} != null ? (object){0} : DBNull.Value)", p.Name)));
                         }
                         else if (p.ParameterType.IsGenericType && p.ParameterType.GetGenericTypeDefinition() == typeof(Nullable<>))
                         {
                             invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
-                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){0}.Value : DBNull.Value)",
-                                p.Name)));
+                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){1}.Value : DBNull.Value)", p.Name, paramCasted)));
                         }
                         else
                         {
                             invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
-                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {0})", p.Name)));
+                                "new System.Data.SqlClient.SqlParameter(\"{0}\", {1})", p.Name, paramCasted)));
                         }
                         methodCode.Parameters.Add(new CodeParameterDeclarationExpression(p.ParameterType, p.Name));
                     }

@@ -11,11 +11,6 @@ namespace InoSoft.Tools.Serialization
 
         public ModelSerializer(Type type)
         {
-            //if (!Attribute.IsDefined(type, typeof(SerializableModelAttribute)))
-            //{
-            //    throw new Exception(string.Format("Can't create model serializer for type {0} which hasn't SerializableModel attribute", type));
-            //}
-
             _properties = new Dictionary<string, Serializer>();
             foreach (var p in type.GetProperties())
             {
@@ -52,10 +47,6 @@ namespace InoSoft.Tools.Serialization
 
         public override bool IsCompatibleWithType(Type type)
         {
-            //if (!Attribute.IsDefined(type, typeof(SerializableModelAttribute)))
-            //{
-            //    return false;
-            //}
             foreach (var p in _properties)
             {
                 PropertyInfo propertyInfo = type.GetProperty(p.Key);

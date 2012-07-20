@@ -10,13 +10,6 @@ namespace InoSoft.Tools.Serialization
             writer.Write((byte)DataType.Int);
         }
 
-        public override bool IsCompatibleWithType(Type type)
-        {
-            return type == typeof(int) || IsDataNullable && type == typeof(int?) ||
-                type.IsEnum || IsDataNullable && type.IsGenericType &&
-                type.GetGenericTypeDefinition() == typeof(Nullable<>) && type.GetGenericArguments()[0].IsEnum;
-        }
-
         internal override void SerializeDataSpecific(object obj, BinaryWriter writer)
         {
             writer.Write((int)obj);
