@@ -4,6 +4,14 @@ using System.IO;
 
 namespace InoSoft.Tools.Serialization
 {
+    /// <summary>
+    /// Base class for serialization purposes. Can serialize and deserialize data of various types.
+    /// </summary>
+    /// <remarks>
+    /// This is the only public class is Serializer hierarchy, its static methods are used to get instances of derived classes,
+    /// which can serialize and deserialize specific types of data. Supported types are all primitive types, Guid, DateTime,
+    /// classes, which properties have type of above and one-dimensional arrays of above.
+    /// </remarks>
     public abstract class Serializer
     {
         private static readonly Dictionary<Type, Serializer> _nullableSerializersByType = new Dictionary<Type, Serializer>
@@ -41,12 +49,107 @@ namespace InoSoft.Tools.Serialization
             { typeof(bool), new BoolSerializer() },
             { typeof(char), new CharSerializer() },
             { typeof(DateTime), new DateTimeSerializer() },
-            { typeof(Guid), new GuidSerializer() }
+            { typeof(Guid), new GuidSerializer() },
+            { typeof(string), new StringSerializer() }
         };
 
+        /// <summary>
+        /// Indicates if type, which is supported by serializer, supports null values.
+        /// </summary>
         internal abstract bool IsDataNullable { get; set; }
 
-        public static Serializer Deserialize(BinaryReader reader)
+        /// <summary>
+        /// Gets appropriate serializer for specified type.
+        /// </summary>
+        /// <param name="type">Type, which returned serializer should be compatible with.</param>
+        public static Serializer FromType(Type type)
+        {
+            var nullableUnderlying = Nullable.GetUnderlyingType(type);
+            bool isNullable = nullableUnderlying != null;
+            if (isNullable)
+            {
+                type = nullableUnderlying;
+            }
+
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            var serializersByType = isNullable ? _nullableSerializersByType : _serializersByType;
+            if (serializersByType.ContainsKey(type))
+            {
+                return serializersByType[type];
+            }
+            else if (type.IsArray)
+            {
+                return new ArraySerializer(type);
+            }
+            else if (type.IsClass)
+            {
+                return new ModelSerializer(type);
+            }
+            else
+            {
+                throw new Exception(string.Format("Can't create serializer from type {0}", type));
+            }
+        }
+
+        /// <summary>
+        /// Deserializes data using binary reader and returns result object.
+        /// </summary>
+        /// <param name="type">Type of result object.</param>
+        /// <param name="reader">Binary reader, which wraps input stream.</param>
+        public object DeserializeData(Type type, BinaryReader reader)
+        {
+            if (!IsCompatibleWithType(type))
+            {
+                throw new Exception(string.Format("Can't deserialize data because specified type {0} is incompatible with {1}", type, this));
+            }
+            if (IsDataNullable && reader.ReadByte() == 0)
+            {
+                return null;
+            }
+            return DeserializeDataSpecific(type, reader);
+        }
+
+        /// <summary>
+        /// Deserializes data using binary reader and returns result object.
+        /// </summary>
+        /// <typeparam name="T">Type of result object.</typeparam>
+        /// <param name="reader">Binary reader, which wraps input stream.</param>
+        public T DeserializeData<T>(BinaryReader reader)
+        {
+            return (T)DeserializeData(typeof(T), reader);
+        }
+
+        /// <summary>
+        /// Serializes data using binary writer.
+        /// </summary>
+        /// <param name="obj">Input data object.</param>
+        /// <param name="writer">Binary writer, which wraps output stream.</param>
+        public void SerializeData(object obj, BinaryWriter writer)
+        {
+            if (IsDataNullable)
+            {
+                writer.Write((byte)(obj == null ? 0 : 1));
+                if (obj == null)
+                {
+                    return;
+                }
+            }
+            if (obj == null)
+            {
+                throw new Exception("Can't serialize null because current serializer doesn't support nullable data");
+            }
+            if (!IsCompatibleWithType(obj.GetType()))
+            {
+                throw new Exception(string.Format("Can't serialize data because its type {0} is incompatible with {1}", obj.GetType(), this));
+            }
+            SerializeDataSpecific(obj, writer);
+        }
+
+        internal static Serializer Deserialize(BinaryReader reader)
         {
             DataType dataType = (DataType)reader.ReadByte();
             switch (dataType)
@@ -92,83 +195,11 @@ namespace InoSoft.Tools.Serialization
             }
         }
 
-        public static Serializer FromType(Type type)
-        {
-            var nullableUnderlying = Nullable.GetUnderlyingType(type);
-            bool isNullable = nullableUnderlying != null;
-            if (isNullable)
-            {
-                type = nullableUnderlying;
-            }
-
-            if (type.IsEnum)
-            {
-                type = Enum.GetUnderlyingType(type);
-            }
-
-            var serializersByType = isNullable ? _nullableSerializersByType : _serializersByType;
-            if (serializersByType.ContainsKey(type))
-            {
-                return serializersByType[type];
-            }
-            else if (type.IsArray)
-            {
-                return new ArraySerializer(type);
-            }
-            else if (type.IsClass)
-            {
-                return new ModelSerializer(type);
-            }
-            else
-            {
-                throw new Exception(string.Format("Can't create serializer from type {0}", type));
-            }
-        }
-
-        public object DeserializeData(Type type, BinaryReader reader)
-        {
-            if (!IsCompatibleWithType(type))
-            {
-                throw new Exception(string.Format("Can't deserialize data because specified type {0} is incompatible with {1}", type, this));
-            }
-            if (IsDataNullable && reader.ReadByte() == 0)
-            {
-                return null;
-            }
-            return DeserializeDataSpecific(type, reader);
-        }
-
-        public T DeserializeData<T>(BinaryReader reader)
-        {
-            return (T)DeserializeData(typeof(T), reader);
-        }
-
-        public abstract bool IsCompatibleWithType(Type type);
-
-        public abstract void Serialize(BinaryWriter writer);
-
-        public void SerializeData(object obj, BinaryWriter writer)
-        {
-            if (IsDataNullable)
-            {
-                writer.Write((byte)(obj == null ? 0 : 1));
-                if (obj == null)
-                {
-                    return;
-                }
-            }
-            if (obj == null)
-            {
-                throw new Exception("Can't serialize null because current serializer doesn't support nullable data");
-            }
-            if (!IsCompatibleWithType(obj.GetType()))
-            {
-                throw new Exception(string.Format("Can't serialize data because its type {0} is incompatible with {1}", obj.GetType(), this));
-            }
-            SerializeDataSpecific(obj, writer);
-        }
-
         internal abstract object DeserializeDataSpecific(Type type, BinaryReader reader);
+
+        internal abstract bool IsCompatibleWithType(Type type);
+
+        internal abstract void Serialize(BinaryWriter writer);
 
         internal abstract void SerializeDataSpecific(object obj, BinaryWriter writer);
     }

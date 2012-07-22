@@ -5,7 +5,7 @@ namespace InoSoft.Tools.Serialization
 {
     internal class DecimalSerializer : PrimitiveSerializer<decimal>
     {
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.Decimal);
         }

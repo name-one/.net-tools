@@ -5,12 +5,12 @@ namespace InoSoft.Tools.Serialization
 {
     internal class StringSerializer : ReferenceTypeSerializer
     {
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.String);
         }
 
-        public override bool IsCompatibleWithType(Type type)
+        internal override bool IsCompatibleWithType(Type type)
         {
             return type == typeof(string);
         }

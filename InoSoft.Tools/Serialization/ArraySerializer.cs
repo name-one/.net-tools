@@ -21,13 +21,13 @@ namespace InoSoft.Tools.Serialization
             _elementSerializer = Serializer.Deserialize(reader);
         }
 
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.Array);
             _elementSerializer.Serialize(writer);
         }
 
-        public override bool IsCompatibleWithType(Type type)
+        internal override bool IsCompatibleWithType(Type type)
         {
             return type.IsArray && _elementSerializer.IsCompatibleWithType(type.GetElementType());
         }

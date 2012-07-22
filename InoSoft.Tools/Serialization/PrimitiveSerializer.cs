@@ -6,7 +6,7 @@ namespace InoSoft.Tools.Serialization
     {
         internal override bool IsDataNullable { get; set; }
 
-        public override bool IsCompatibleWithType(Type type)
+        internal override bool IsCompatibleWithType(Type type)
         {
             return type == typeof(T) || IsDataNullable && type == typeof(T?);
         }

@@ -5,7 +5,7 @@ namespace InoSoft.Tools.Serialization
 {
     internal class GuidSerializer : PrimitiveSerializer<Guid>
     {
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.Guid);
         }

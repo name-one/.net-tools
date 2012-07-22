@@ -49,6 +49,7 @@
     <Compile Include="Serialization\BoolSerializer.cs" />
     <Compile Include="Serialization\ByteSerializer.cs" />
     <Compile Include="Serialization\CharSerializer.cs" />
+    <Compile Include="Serialization\Serializer.Generic.cs" />
     <Compile Include="Serialization\DataType.cs" />
     <Compile Include="Serialization\DateTimeSerializer.cs" />
     <Compile Include="Serialization\DecimalSerializer.cs" />

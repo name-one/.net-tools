@@ -34,7 +34,7 @@ namespace InoSoft.Tools.Serialization
             }
         }
 
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.Struct);
             writer.Write((byte)_properties.Count);
@@ -45,7 +45,7 @@ namespace InoSoft.Tools.Serialization
             }
         }
 
-        public override bool IsCompatibleWithType(Type type)
+        internal override bool IsCompatibleWithType(Type type)
         {
             foreach (var p in _properties)
             {

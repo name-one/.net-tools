@@ -5,7 +5,7 @@ namespace InoSoft.Tools.Serialization
 {
     internal class FloatSerializer : PrimitiveSerializer<float>
     {
-        public override void Serialize(BinaryWriter writer)
+        internal override void Serialize(BinaryWriter writer)
         {
             writer.Write((byte)DataType.Float);
         }
