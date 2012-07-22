@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Human.cs" />
+    <Compile Include="HumanId.cs" />
     <Compile Include="IProceduresProxy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlContextTest.cs" />

@@ -99,35 +99,47 @@ namespace InoSoft.Tools.Data.Test
             Assert.AreEqual(lastName, testHuman.LastName);
         }
 
-        //public virtual void GetRandomHumanViaOutput(out long id, out string firstName, out string lastName)
-        //{
-        //    System.Data.SqlClient.SqlParameter idSqlParameter = new System.Data.SqlClient.SqlParameter();
-        //    idSqlParameter.ParameterName = "id";
-        //    idSqlParameter.Value = System.DBNull.Value;
-        //    idSqlParameter.Direction = System.Data.ParameterDirection.Output;
-        //    idSqlParameter.Size = Int32.MaxValue;
-        //    System.Data.SqlClient.SqlParameter firstNameSqlParameter = new System.Data.SqlClient.SqlParameter();
-        //    firstNameSqlParameter.ParameterName = "firstName";
-        //    firstNameSqlParameter.Value = DBNull.Value;
-        //    firstNameSqlParameter.Direction = System.Data.ParameterDirection.Output;
-        //    firstNameSqlParameter.Size = Int32.MaxValue;
-        //    System.Data.SqlClient.SqlParameter lastNameSqlParameter = new System.Data.SqlClient.SqlParameter();
-        //    lastNameSqlParameter.ParameterName = "lastName";
-        //    lastNameSqlParameter.Value = DBNull.Value;
-        //    lastNameSqlParameter.Direction = System.Data.ParameterDirection.Output;
-        //    lastNameSqlParameter.Size = Int32.MaxValue;
-        //    Context.Execute("EXEC GetRandomHumanViaOutput @id output,@firstName output,@lastName output", idSqlParameter, firstNameSqlParameter, lastNameSqlParameter);
-        //    id = ((long)(idSqlParameter.Value));
-        //    firstName = ((string)(firstNameSqlParameter.Value));
-        //    lastName = ((string)(lastNameSqlParameter.Value));
-        //}
+        [TestMethod]
+        public void Enum()
+        {
+            var context = CreateSqlContext();
+
+            Human[] testHumans = new Human[]
+            {
+                new Human{Id = null, FirstName = "Josef", LastName = "Kobzon"},
+                new Human{Id = 2, FirstName = "Sofia", LastName = "Rotaru"},
+                new Human{Id = 3, FirstName = "Larisa", LastName = "Dolina"}
+            };
+            HumanId?[] testHumanIds = new HumanId?[]
+            {
+                null,
+                HumanId.Rotaru,
+                HumanId.Dolina
+            };
+            context.Execute("TRUNCATE TABLE Human");
+            foreach (var item in testHumans)
+            {
+                InsertIntoHuman(context, item);
+            }
+
+            for (int i = 0; i < 3; i++)
+            {
+                var resultHuman = context.Procedures.GetHumanById(testHumanIds[i]);
+                Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
+                if (testHumanIds[i].HasValue)
+                {
+                    resultHuman = context.Procedures.GetHumanById(testHumanIds[i].Value);
+                    Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
+                }
+            }
+        }
 
         private void InsertIntoHuman(SqlContext context, Human human)
         {
             context.Execute("INSERT INTO Human VALUES(@id, @firstName, @lastName)",
-                    new SqlParameter("id", human.Id),
-                    new SqlParameter("firstName", human.FirstName),
-                    new SqlParameter("lastName", human.LastName));
+                new SqlParameter("id", human.Id.HasValue ? (object)human.Id.Value : DBNull.Value),
+                new SqlParameter("firstName", human.FirstName),
+                new SqlParameter("lastName", human.LastName));
         }
 
         private SqlContext<IProceduresProxy> CreateSqlContext()
