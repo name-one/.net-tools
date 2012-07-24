@@ -17,5 +17,7 @@
         void GetHumanViaOutput(long id, out string firstName, out string lastName);
 
         void GetRandomHumanViaOutput(out long id, out string firstName, out string lastName);
+
+        string ProcessText(string text);
     }
 }

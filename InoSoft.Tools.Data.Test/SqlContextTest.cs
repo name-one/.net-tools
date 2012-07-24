@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Data.SqlClient;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Text;
+using NUnit.Framework;
 
 namespace InoSoft.Tools.Data.Test
 {
-    [TestClass]
+    [TestFixture]
     public class SqlContextTest
     {
-        [TestMethod]
+        [Test]
         public void GetHumans()
         {
             var context = CreateSqlContext();
@@ -29,7 +30,7 @@ namespace InoSoft.Tools.Data.Test
             Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
         }
 
-        [TestMethod]
+        [Test]
         public void GetHumanById()
         {
             var context = CreateSqlContext();
@@ -45,7 +46,7 @@ namespace InoSoft.Tools.Data.Test
             Assert.IsNull(resultHuman);
         }
 
-        [TestMethod]
+        [Test]
         public void Nulls()
         {
             var context = CreateSqlContext();
@@ -67,7 +68,7 @@ namespace InoSoft.Tools.Data.Test
             Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
         }
 
-        [TestMethod]
+        [Test]
         public void StringOutputs()
         {
             var context = CreateSqlContext();
@@ -82,7 +83,7 @@ namespace InoSoft.Tools.Data.Test
             Assert.AreEqual(lastName, testHuman.LastName);
         }
 
-        [TestMethod]
+        [Test]
         public void VariousOutputs()
         {
             var context = CreateSqlContext();
@@ -99,7 +100,7 @@ namespace InoSoft.Tools.Data.Test
             Assert.AreEqual(lastName, testHuman.LastName);
         }
 
-        [TestMethod]
+        [Test]
         public void Enum()
         {
             var context = CreateSqlContext();
@@ -134,6 +135,20 @@ namespace InoSoft.Tools.Data.Test
             }
         }
 
+        [Test]
+        public void ProcessText()
+        {
+            var context = CreateSqlContext();
+            var sb = new StringBuilder();
+            for (int i = 0; i < 100; i++)
+            {
+                sb.Append("abcd");
+            }
+            var testText = sb.ToString();
+            var resultText = context.Procedures.ProcessText(testText);
+            Assert.AreEqual(testText, resultText);
+        }
+
         private void InsertIntoHuman(SqlContext context, Human human)
         {
             context.Execute("INSERT INTO Human VALUES(@id, @firstName, @lastName)",
@@ -144,7 +159,7 @@ namespace InoSoft.Tools.Data.Test
 
         private SqlContext<IProceduresProxy> CreateSqlContext()
         {
-            return new SqlContext<IProceduresProxy>("data source=(local);initial catalog=InoSoft.Tools.Data.Test;integrated security=true");
+            return new SqlContext<IProceduresProxy>("data source=.\\sqlexpress;initial catalog=InoSoft.Tools.Data.Test;integrated security=true");
         }
     }
 }
