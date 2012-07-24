@@ -8,7 +8,18 @@ namespace InoSoft.Tools.Serialization
 
         internal override bool IsCompatibleWithType(Type type)
         {
-            return type == typeof(T) || IsDataNullable && type == typeof(T?);
+            var nullableUnderlying = Nullable.GetUnderlyingType(type);
+            bool isNullable = nullableUnderlying != null;
+            if (isNullable)
+            {
+                type = nullableUnderlying;
+            }
+            if (type.IsEnum)
+            {
+                type = Enum.GetUnderlyingType(type);
+            }
+
+            return type == typeof(T) && (!IsDataNullable || IsDataNullable && isNullable);
         }
     }
 }
