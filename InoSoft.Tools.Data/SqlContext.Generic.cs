@@ -250,7 +250,8 @@ namespace InoSoft.Tools.Data
                     var properties = elementType.GetProperties(ClonedPropertyBindingFlags);
                     foreach (var propertyInfo in properties)
                     {
-                        if (propertyInfo.PropertyType.IsEnum)
+                        Type propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
+                        if (propertyType.IsEnum)
                         {
                             customModel = GetCustomModelCode(elementType);
                             customModelsCode.Add(elementType, customModel);

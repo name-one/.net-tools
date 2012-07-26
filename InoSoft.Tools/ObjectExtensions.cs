@@ -7,7 +7,7 @@ namespace InoSoft.Tools
     {
         public static bool MemberwiseEquals(this object firstObject, object secondObject)
         {
-            if (Object.Equals(firstObject, secondObject))
+            if (Equals(firstObject, secondObject))
             {
                 return true;
             }
@@ -29,8 +29,11 @@ namespace InoSoft.Tools
                 object secondValue;
                 if (member is PropertyInfo)
                 {
-                    firstValue = ((PropertyInfo)member).GetValue(firstObject, null);
-                    secondValue = ((PropertyInfo)member).GetValue(secondObject, null);
+                    var propertyInfo = ((PropertyInfo)member);
+                    if (propertyInfo.GetIndexParameters().Length > 0)
+                        continue;
+                    firstValue = propertyInfo.GetValue(firstObject, null);
+                    secondValue = propertyInfo.GetValue(secondObject, null);
                 }
                 else if (member is FieldInfo)
                 {
