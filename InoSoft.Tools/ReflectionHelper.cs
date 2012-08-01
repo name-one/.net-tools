@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace InoSoft.Tools
@@ -19,11 +20,23 @@ namespace InoSoft.Tools
             where TSource : class
             where TDest : class
         {
+            return (TDest)Clone(source, typeof(TSource), typeof(TDest));
+        }
+
+        /// <summary>
+        /// Clones a source object of type <paramref name="sourceType"/> to an object of type <paramref name="destType"/>
+        /// by copying every property value of the source object to a corresponding property of the destination object,
+        /// converting types where necessary.
+        /// </summary>
+        /// <param name="source">Object to clone.</param>
+        /// <param name="sourceType">Source object type.</param>
+        /// <param name="destType">Destination object type.</param>
+        /// <returns>Cloned object of type <paramref name="destType"/>.</returns>
+        public static object Clone(object source, Type sourceType, Type destType)
+        {
             if (source == null)
                 return null;
-            Type sourceType = typeof(TSource);
-            Type destType = typeof(TDest);
-            var result = (TDest)Activator.CreateInstance(destType);
+            object result = Activator.CreateInstance(destType);
             foreach (var sourceProp in sourceType.GetProperties())
             {
                 PropertyInfo destProp = destType.GetProperty(sourceProp.Name);
@@ -55,12 +68,26 @@ namespace InoSoft.Tools
             where TSource : class
             where TDest : class
         {
+            return CloneArray(source, typeof(TSource), typeof(TDest)).Cast<TDest>().ToArray();
+        }
+
+        /// <summary>
+        /// Clones an array of source objects of type <paramref name="sourceType"/> to an array of objects
+        /// of type <paramref name="destType"/> by copying every property value of every source object to
+        /// a corresponding property of the destination object, converting types where necessary.
+        /// </summary>
+        /// <param name="source">Array to clone.</param>
+        /// <param name="sourceType">Source object type.</param>
+        /// <param name="destType">Destination object type.</param>
+        /// <returns>Cloned array of objects of type <paramref name="destType"/>.</returns>
+        public static Array CloneArray(Array source, Type sourceType, Type destType)
+        {
             if (source == null)
                 return null;
-            var result = new TDest[source.Length];
+            var result = new object[source.Length];
             for (int i = 0; i < source.Length; i++)
             {
-                result[i] = Clone<TSource, TDest>(source[i]);
+                result[i] = Clone(source.GetValue(i), sourceType, destType);
             }
             return result;
         }

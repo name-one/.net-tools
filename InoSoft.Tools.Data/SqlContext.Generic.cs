@@ -1,13 +1,9 @@
 ﻿using System;
 using System.CodeDom;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Diagnostics;
-using System.IO;
 using System.Reflection;
 using System.Text;
-using Microsoft.CSharp;
 
 namespace InoSoft.Tools.Data
 {
@@ -22,7 +18,6 @@ namespace InoSoft.Tools.Data
     /// </remarks>
     public class SqlContext<TProcedures> : SqlContext
     {
-        private const BindingFlags ClonedPropertyBindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty;
         private readonly string _proxyTypeName;
         private readonly Assembly _compiledAssembly;
 
@@ -41,80 +36,29 @@ namespace InoSoft.Tools.Data
                 throw new Exception("Stored procedures definitions type must be an interface.");
             }
 
-            // Generate procedures proxy code.
-            var codeProvider = new CSharpCodeProvider();
-
             // Create a namespace for the code being generated, add usings.
-            var namespaceCode = new CodeNamespace("InoSoft.Tools.Data");
-            namespaceCode.Imports.Add(new CodeNamespaceImport("System"));
-            namespaceCode.Imports.Add(new CodeNamespaceImport("System.Collections"));
-            namespaceCode.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
-            namespaceCode.Imports.Add(new CodeNamespaceImport("System.Linq"));
+            var codeNamespace = new CodeNamespace("InoSoft.Tools.Data");
+            codeNamespace.Imports.Add(new CodeNamespaceImport("System"));
+            codeNamespace.Imports.Add(new CodeNamespaceImport("System.Collections"));
+            codeNamespace.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
+            codeNamespace.Imports.Add(new CodeNamespaceImport("System.Linq"));
 
             // Generate proxy class code and add it to the namespace.
             _proxyTypeName = "ProceduresProxy";
             var proxyClassCode = GetProxyClassCode(proceduresInterfaceType, _proxyTypeName);
-            namespaceCode.Types.Add(proxyClassCode);
+            codeNamespace.Types.Add(proxyClassCode);
 
-#if DEBUG
-            // Determine generated source code.
-            var ms = new MemoryStream();
-            var sw = new StreamWriter(ms, Encoding.Unicode);
-            codeProvider.GenerateCodeFromNamespace(namespaceCode, sw, new CodeGeneratorOptions());
-            sw.Flush();
-            byte[] codeBytes = ms.ToArray();
-            string code = Encoding.Unicode.GetString(codeBytes);
-            Debug.WriteLine("Generated ProceduresProxy code:");
-            Debug.WriteLine(code);
-#endif
-
-            // Compile temporary assembly.
-            var compileUnit = new CodeCompileUnit();
-            var assemblyList = new List<Assembly>
+            // Add assembly references.
+            var assemblies = new[]
             {
                 Assembly.GetAssembly(typeof(SqlParameter)),
                 Assembly.GetAssembly(typeof(AsyncProcessor<>)),
                 Assembly.GetAssembly(typeof(SqlContext)),
                 Assembly.GetAssembly(typeof(TProcedures))
             };
-            var referenceNames = new List<AssemblyName>();
-            foreach (var assembly in assemblyList)
-            {
-                referenceNames.AddRange(assembly.GetReferencedAssemblies());
-            }
-            foreach (var assemblyName in referenceNames)
-            {
-                assemblyList.Add(Assembly.ReflectionOnlyLoad(assemblyName.FullName));
-            }
 
-            compileUnit.Namespaces.Add(namespaceCode);
-            var compilerParameters = new CompilerParameters
-            {
-                GenerateExecutable = false,
-                GenerateInMemory = true,
-                IncludeDebugInformation = true
-            };
-            var usedReferences = new HashSet<string>();
-            foreach (var assembly in assemblyList)
-            {
-                if (!usedReferences.Contains(assembly.Location))
-                {
-                    compilerParameters.ReferencedAssemblies.Add(assembly.Location);
-                    compileUnit.ReferencedAssemblies.Add(assembly.Location);
-                    usedReferences.Add(assembly.Location);
-                }
-            }
-#if DEBUG
-            string sourcePath = Path.GetTempFileName() + ".cs";
-            using (var writer = new StreamWriter(sourcePath))
-            {
-                codeProvider.GenerateCodeFromNamespace(namespaceCode, writer, null);
-            }
-            var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, sourcePath);
-#else
-            var compileResult = codeProvider.CompileAssemblyFromDom(compilerParameters, compileUnit);
-#endif
-            _compiledAssembly = compileResult.CompiledAssembly;
+            // Compile the assembly.
+            _compiledAssembly = AssemblyCreator.Create(codeNamespace, assemblies);
 
             // Create procedures proxy.
             object procedures = _compiledAssembly.CreateInstance("InoSoft.Tools.Data." + _proxyTypeName);
@@ -247,17 +191,11 @@ namespace InoSoft.Tools.Data
                 }
                 else if (elementType.IsClass)
                 {
-                    var properties = elementType.GetProperties(ClonedPropertyBindingFlags);
-                    foreach (var propertyInfo in properties)
+                    if (elementType.ContainsEnums())
                     {
-                        Type propertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType) ?? propertyInfo.PropertyType;
-                        if (propertyType.IsEnum)
-                        {
-                            customModel = GetCustomModelCode(elementType);
-                            customModelsCode.Add(elementType, customModel);
-                            cloneNeeded = true;
-                            break;
-                        }
+                        customModel = EnumlessTypeHelper.GetEnumlessClassCode(elementType);
+                        customModelsCode.Add(elementType, customModel);
+                        cloneNeeded = true;
                     }
                 }
                 var modelTypeRef = cloneNeeded ? new CodeTypeReference(customModel.Name) : new CodeTypeReference(elementType);
@@ -330,49 +268,6 @@ namespace InoSoft.Tools.Data
             }
 
             return classCode;
-        }
-
-        private static CodeTypeDeclaration GetCustomModelCode(Type elementType)
-        {
-            var modelCode = new CodeTypeDeclaration(elementType.Name);
-            foreach (var propertyInfo in elementType.GetProperties(ClonedPropertyBindingFlags))
-            {
-                CodeTypeReference typeReference;
-                // Handle nullable type.
-                Type nullableUnderlyingType = Nullable.GetUnderlyingType(propertyInfo.PropertyType);
-                if (nullableUnderlyingType != null && nullableUnderlyingType.IsEnum)
-                {
-                    typeReference = new CodeTypeReference(typeof(Nullable<>).Name,
-                        new[] { new CodeTypeReference(Enum.GetUnderlyingType(nullableUnderlyingType)) });
-                }
-                else
-                {
-                    typeReference = new CodeTypeReference(propertyInfo.PropertyType.IsEnum
-                        ? Enum.GetUnderlyingType(propertyInfo.PropertyType)
-                        : propertyInfo.PropertyType);
-                }
-                // Create backing field for the property.
-                var backingFieldCode = new CodeMemberField(typeReference, String.Format("m_{0}", propertyInfo.Name));
-                // Create the prorepty.
-                var propertyCode = new CodeMemberProperty
-                {
-                    Name = propertyInfo.Name,
-                    Type = typeReference,
-                    HasGet = true,
-                    HasSet = true,
-                    Attributes = MemberAttributes.Public
-                };
-                // Implement property getter and setter.
-                propertyCode.GetStatements.Add(new CodeMethodReturnStatement(
-                    new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), backingFieldCode.Name)));
-                propertyCode.SetStatements.Add(new CodeAssignStatement(
-                    new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), backingFieldCode.Name),
-                    new CodePropertySetValueReferenceExpression()));
-                // Add the property and its backing field to the class code.
-                modelCode.Members.Add(backingFieldCode);
-                modelCode.Members.Add(propertyCode);
-            }
-            return modelCode;
         }
 
         /// <summary>

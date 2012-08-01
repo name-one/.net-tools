@@ -41,9 +41,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayExtensions.cs" />
+    <Compile Include="AssemblyCreator.cs" />
     <Compile Include="AsyncIterationRunner.cs" />
     <Compile Include="AsyncProcessor.cs" />
     <Compile Include="CustomEventHandler.cs" />
+    <Compile Include="EnumlessTypeHelper.cs" />
     <Compile Include="IterationWaiter.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -38,10 +38,19 @@ namespace InoSoft.Tools.Data
         /// <param name="parameters">Optional named parameters.</param>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
+            // Check if query return type contains enum values and thus needs a proxy type.
+            bool needsProxy = false;
+            Type realType = elementType;
+            if (elementType != null && elementType.ContainsEnums())
+            {
+                needsProxy = true;
+                realType = elementType.GetEnumlessProxy();
+            }
+
             // Create encapsulated query and push it into queue
             var query = new SqlQuery
             {
-                ElementType = elementType,
+                ElementType = realType,
                 Sql = sql,
                 Parameters = parameters
             };
@@ -58,6 +67,10 @@ namespace InoSoft.Tools.Data
             }
 
             // Return query result
+            if (needsProxy)
+            {
+                return ReflectionHelper.CloneArray(query.Result, realType, elementType);
+            }
             return query.Result;
         }
 
