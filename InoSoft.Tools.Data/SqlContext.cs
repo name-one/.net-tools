@@ -10,11 +10,11 @@ namespace InoSoft.Tools.Data
     /// <remarks>
     /// Works synchronously, but in separate thread. Only one thread and one execution queue are created,
     /// so single context can operate only single SQL query at the same time. For simultaneous access
-    /// miltiple contexts must be used. Note, that some versions of MSSQL can't operate queries in parallel.
+    /// miltiple contexts must be used. Note that some versions of MSSQL can't operate queries in parallel.
     /// In this case using single context for the whole application is recommended.
-    /// This context is async wrapper of EF 4.1 DbContext and its best advantage is that it works in single
-    /// thread, as mentioned before. This technique solves problem, when EntityConnection reconnects each time
-    /// it's used in different thread.
+    /// This context is asynchronous wrapper of EF 4.1 DbContext and its best advantage is that it works in single
+    /// thread, as mentioned above. This technique solves problem when EntityConnection reconnects each time
+    /// it's used in a different thread.
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext
     {
@@ -47,7 +47,7 @@ namespace InoSoft.Tools.Data
                 realType = elementType.GetEnumlessProxy();
             }
 
-            // Create encapsulated query and push it into queue
+            // Create encapsulated query and push it into queue.
             var query = new SqlQuery
             {
                 ElementType = realType,
@@ -57,16 +57,16 @@ namespace InoSoft.Tools.Data
             var batch = new SqlBatch { Queries = new[] { query } };
             EnqueueItem(batch);
 
-            // Wait until query will be executed
+            // Wait until query is executed.
             batch.WaitSignal();
 
             if (query.Exception != null)
             {
-                // Rethrow exception if it occured
+                // Rethrow the exception if it occured.
                 throw query.Exception;
             }
 
-            // Return query result
+            // Return query result.
             if (needsProxy)
             {
                 return ReflectionHelper.CloneArray(query.Result, realType, elementType);
