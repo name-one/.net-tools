@@ -93,6 +93,17 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
+        /// Gets member attributes of the specified type.
+        /// </summary>
+        /// <typeparam name="TAttribute">Attribute type.</typeparam>
+        /// <param name="memberInfo">Member, attributes of which to get.</param>
+        /// <returns>Attributes of the member.</returns>
+        public static TAttribute[] GetAttributes<TAttribute>(MemberInfo memberInfo)
+        {
+            return memberInfo.GetCustomAttributes(typeof(TAttribute), true).Cast<TAttribute>().ToArray();
+        }
+
+        /// <summary>
         /// Compares property values of two objects and sets values from source to destination if they differ.
         /// </summary>
         /// <param name="dest">Destination object.</param>
