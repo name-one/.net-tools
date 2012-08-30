@@ -41,7 +41,7 @@ namespace InoSoft.Tools.Data
             // Check if query return type contains enum values and thus needs a proxy type.
             bool needsProxy = false;
             Type realType = elementType;
-            if (elementType != null && elementType.ContainsEnums())
+            if (elementType != null && !SqlTypeHelper.IsSqlType(elementType) && elementType.ContainsEnums())
             {
                 needsProxy = true;
                 realType = elementType.GetEnumlessProxy();

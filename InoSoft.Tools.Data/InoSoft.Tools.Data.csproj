@@ -49,6 +49,7 @@
     <Compile Include="SqlBatch.cs" />
     <Compile Include="SqlQuery.cs" />
     <Compile Include="SqlContext.cs" />
+    <Compile Include="SqlTypeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
