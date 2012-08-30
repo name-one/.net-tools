@@ -1,10 +1,22 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 
 namespace InoSoft.Tools
 {
     public static class ObjectExtensions
     {
+        /// <summary>
+        /// Compares two objects of the same type by values of their properties and fields.
+        /// If the objects are value types, compares them by value.
+        /// If the objects are arrays, compares them elementwise.
+        /// If the objects implement <see cref="IEquatable{T}"/> interface, compares them using <see cref="IEquatable{T}.Equals(T)"/>.
+        /// </summary>
+        /// <param name="firstObject">First object to compare.</param>
+        /// <param name="secondObject">Second object to compare.</param>
+        /// <returns>
+        /// True if <paramref name="firstObject"/> is memberwise equal to <paramref name="secondObject"/>.
+        /// </returns>
         public static bool MemberwiseEquals(this object firstObject, object secondObject)
         {
             if (Equals(firstObject, secondObject))
@@ -12,8 +24,13 @@ namespace InoSoft.Tools
                 return true;
             }
 
-            if (firstObject == null || secondObject == null ||
-                firstObject.GetType() != secondObject.GetType())
+            if (firstObject == null || secondObject == null)
+            {
+                return false;
+            }
+
+            Type type = firstObject.GetType();
+            if (type != secondObject.GetType())
             {
                 return false;
             }
@@ -23,38 +40,55 @@ namespace InoSoft.Tools
                 return firstObject.Equals(secondObject);
             }
 
-            foreach (var member in firstObject.GetType().GetMembers())
+            var array = firstObject as Array;
+            if (array != null)
             {
-                object firstValue;
-                object secondValue;
-                if (member is PropertyInfo)
-                {
-                    var propertyInfo = ((PropertyInfo)member);
-                    if (propertyInfo.GetIndexParameters().Length > 0)
-                        continue;
-                    firstValue = propertyInfo.GetValue(firstObject, null);
-                    secondValue = propertyInfo.GetValue(secondObject, null);
-                }
-                else if (member is FieldInfo)
-                {
-                    firstValue = ((FieldInfo)member).GetValue(firstObject);
-                    secondValue = ((FieldInfo)member).GetValue(secondObject);
-                }
-                else
-                {
-                    continue;
-                }
-
-                bool isArray = firstObject is Array && secondObject is Array;
-
-                if (isArray && !ArrayExtensions.ElementwiseEquals((Array)firstObject, (Array)secondObject) ||
-                    !MemberwiseEquals(firstValue, secondValue))
-                {
-                    return false;
-                }
+                return array.ElementwiseEquals((Array)secondObject);
             }
 
-            return true;
+            Type equatable = typeof(IEquatable<>).MakeGenericType(type);
+            if (type.GetInterfaces().Contains(equatable))
+            {
+                MethodInfo equals = equatable.GetMethod("Equals");
+                return (bool)equals.Invoke(firstObject, new[] { secondObject });
+            }
+
+            return CompareProperties(firstObject, secondObject, type)
+                && CompareFields(firstObject, secondObject, type);
+        }
+
+        /// <summary>
+        /// Compares all fields of the provided objects.
+        /// </summary>
+        /// <param name="firstObject">First object to compare.</param>
+        /// <param name="secondObject">Second object to compare.</param>
+        /// <param name="type">Type of the objects being compared.</param>
+        /// <returns>
+        /// True if all fields of <paramref name="firstObject"/> are memberwise equal to the corresponding
+        /// fields of <paramref name="secondObject"/>.
+        /// </returns>
+        private static bool CompareFields(object firstObject, object secondObject, Type type)
+        {
+            return type.GetFields()
+                .All(field => MemberwiseEquals(field.GetValue(firstObject), field.GetValue(secondObject)));
+        }
+
+        /// <summary>
+        /// Compares all properties of the provided objects.
+        /// </summary>
+        /// <param name="firstObject">First object to compare.</param>
+        /// <param name="secondObject">Second object to compare.</param>
+        /// <param name="type">Type of the objects being compared.</param>
+        /// <returns>
+        /// True if all properties of <paramref name="firstObject"/> are memberwise equal to the corresponding
+        /// properties of <paramref name="secondObject"/>.
+        /// </returns>
+        private static bool CompareProperties(object firstObject, object secondObject, Type type)
+        {
+            return type.GetProperties()
+                .Where(property => property.GetIndexParameters().Length <= 0)
+                .All(property =>
+                    MemberwiseEquals(property.GetValue(firstObject, null), property.GetValue(secondObject, null)));
         }
     }
 }
