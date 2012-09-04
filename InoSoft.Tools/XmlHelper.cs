@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Xml.Serialization;
+using System.Net;
 
 namespace InoSoft.Tools
 {
@@ -54,6 +55,24 @@ namespace InoSoft.Tools
             {
                 return FromXml<T>(file);
             }
+        }
+		
+		/// <summary>
+        /// Deserializes an object from an XML, which is requested from specified URI via HTTP.
+        /// </summary>
+        /// <typeparam name="T">Type of the object to deserialize.</typeparam>
+        /// <param name="uri">URI of the HTTP request.</param>
+		public static T FromXml<T>(Uri uri)
+            where T : class
+        {
+            if (uri == null)
+                throw new ArgumentNullException("uri");
+			
+			var request = WebRequest.Create(uri);
+			using (var response = request.GetResponse())
+			{
+				return FromXml<T>(response.GetResponseStream());				
+			}
         }
 
         /// <summary>
