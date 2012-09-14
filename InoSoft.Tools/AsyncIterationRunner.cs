@@ -11,9 +11,9 @@ namespace InoSoft.Tools
         private Thread _thread;
 
         /// <summary>
-        /// Creates an instance of AsyncIterationRunner with the specified minimum iteration time.
+        /// Creates an instance of <see cref="AsyncIterationRunner"/> with the specified minimum iteration time.
         /// </summary>
-        /// <param name="iterationTime">Minimum iteration time.</param>
+        /// <param name="iterationTime">Minimum iteration time in milliseconds.</param>
         protected AsyncIterationRunner(int iterationTime)
         {
             _iterationTime = iterationTime;
@@ -22,7 +22,7 @@ namespace InoSoft.Tools
         private bool _isRunning;
 
         /// <summary>
-        /// True if AsyncIterationRunner is currently running.
+        /// True if <see cref="AsyncIterationRunner"/> is currently running.
         /// </summary>
         public bool IsRunning
         {
@@ -30,7 +30,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Minimum iteration time.
+        /// Minimum iteration time in milliseconds.
         /// </summary>
         public int IterationTime
         {
@@ -38,7 +38,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Starts AsyncIterationRunner.
+        /// Starts <see cref="AsyncIterationRunner"/> if it is not already running.
         /// </summary>
         public void Start()
         {
@@ -56,7 +56,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Stops AsyncIterationRunner.
+        /// Stops <see cref="AsyncIterationRunner"/> if it is currently running.
         /// </summary>
         public void Stop()
         {
@@ -64,12 +64,12 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Does the work.
+        /// Performs the work required every iteration.
         /// </summary>
         protected abstract void RunIteration();
 
         /// <summary>
-        /// Runs the RunIteration() method until stopped.
+        /// Runs the <see cref="RunIteration"/> method until stopped.
         /// </summary>
         private void Execute()
         {

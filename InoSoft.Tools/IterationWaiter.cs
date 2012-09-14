@@ -13,7 +13,7 @@ namespace InoSoft.Tools
         private readonly int _iterationTime;
 
         /// <summary>
-        /// Gets or sets desired minimum iteration time.
+        /// Gets desired minimum iteration time in milliseconds.
         /// </summary>
         public int IterationTime
         {
@@ -31,7 +31,7 @@ namespace InoSoft.Tools
         /// <summary>
         /// Creates IterationWaiter with specified iteration time.
         /// </summary>
-        /// <param name="iterationTime">Desired minimum iteration time</param>
+        /// <param name="iterationTime">Desired minimum iteration time in milliseconds.</param>
         public IterationWaiter(int iterationTime)
         {
             _iterationTime = iterationTime;
@@ -64,7 +64,7 @@ namespace InoSoft.Tools
         /// Creates and starts a new IterationWaiter with specified iteration time.
         /// Equivalent to creating an instance using constructor and calling Start().
         /// </summary>
-        /// <param name="iterationTime">Desired minimum iteration time.</param>
+        /// <param name="iterationTime">Desired minimum iteration time in milliseconds.</param>
         /// <returns>Created IterationWaiter instance.</returns>
         public static IterationWaiter StartNew(int iterationTime)
         {

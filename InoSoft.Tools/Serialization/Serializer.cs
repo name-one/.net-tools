@@ -81,18 +81,15 @@ namespace InoSoft.Tools.Serialization
             {
                 return serializersByType[type];
             }
-            else if (type.IsArray)
+            if (type.IsArray)
             {
                 return new ArraySerializer(type);
             }
-            else if (type.IsClass)
+            if (type.IsClass)
             {
                 return new ModelSerializer(type);
             }
-            else
-            {
-                throw new Exception(string.Format("Can't create serializer from type {0}", type));
-            }
+            throw new Exception(string.Format("Can't create serializer from type {0}", type));
         }
 
         /// <summary>

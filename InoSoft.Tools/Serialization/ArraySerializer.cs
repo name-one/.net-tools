@@ -5,7 +5,7 @@ namespace InoSoft.Tools.Serialization
 {
     internal class ArraySerializer : ReferenceTypeSerializer
     {
-        private Serializer _elementSerializer;
+        private readonly Serializer _elementSerializer;
 
         public ArraySerializer(Type type)
         {
@@ -13,12 +13,12 @@ namespace InoSoft.Tools.Serialization
             {
                 throw new Exception(string.Format("Can't create array serializer for non-array type {0}", type));
             }
-            _elementSerializer = Serializer.FromType(type.GetElementType());
+            _elementSerializer = FromType(type.GetElementType());
         }
 
         public ArraySerializer(BinaryReader reader)
         {
-            _elementSerializer = Serializer.Deserialize(reader);
+            _elementSerializer = Deserialize(reader);
         }
 
         internal override void Serialize(BinaryWriter writer)
@@ -34,7 +34,7 @@ namespace InoSoft.Tools.Serialization
 
         internal override void SerializeDataSpecific(object obj, BinaryWriter writer)
         {
-            Array array = (Array)obj;
+            var array = (Array)obj;
             writer.Write(array.Length);
             foreach (var item in array)
             {

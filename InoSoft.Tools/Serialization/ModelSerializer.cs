@@ -7,14 +7,14 @@ namespace InoSoft.Tools.Serialization
 {
     internal class ModelSerializer : ReferenceTypeSerializer
     {
-        private Dictionary<string, Serializer> _properties;
+        private readonly Dictionary<string, Serializer> _properties;
 
         public ModelSerializer(Type type)
         {
             _properties = new Dictionary<string, Serializer>();
             foreach (var p in type.GetProperties())
             {
-                Serializer schema = Serializer.FromType(p.PropertyType);
+                Serializer schema = FromType(p.PropertyType);
                 if (schema != null)
                 {
                     _properties.Add(p.Name, schema);
@@ -29,7 +29,7 @@ namespace InoSoft.Tools.Serialization
             for (int i = 0; i < count; i++)
             {
                 string name = reader.ReadString();
-                Serializer serializer = Serializer.Deserialize(reader);
+                Serializer serializer = Deserialize(reader);
                 _properties.Add(name, serializer);
             }
         }

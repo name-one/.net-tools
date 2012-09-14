@@ -6,7 +6,7 @@ namespace InoSoft.Tools
     {
         public static bool ElementwiseEquals(this Array firstArray, Array secondArray)
         {
-            if (Object.Equals(firstArray, secondArray))
+            if (Equals(firstArray, secondArray))
             {
                 return true;
             }

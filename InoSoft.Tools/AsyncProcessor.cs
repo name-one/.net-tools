@@ -7,11 +7,11 @@ namespace InoSoft.Tools
     public abstract class AsyncProcessor<T>
     {
         private readonly bool _isBackground;
+        private readonly object _processItemLock = new object();
         private readonly Queue<T> _queue;
         private readonly EventWaitHandle _queueHasItemsEvent;
         private Thread _dispatcherThread;
         private bool _isRunning;
-        private object _processItemLock = new object();
 
         /// <summary>
         /// Creates AsyncProcessor instance.
@@ -69,15 +69,15 @@ namespace InoSoft.Tools
             OnStop();
         }
 
+        protected virtual void OnProcessItemException(T item, Exception ex)
+        {
+        }
+
         protected virtual void OnStart()
         {
         }
 
         protected virtual void OnStop()
-        {
-        }
-
-        protected virtual void OnProcessItemException(T item, Exception ex)
         {
         }
 

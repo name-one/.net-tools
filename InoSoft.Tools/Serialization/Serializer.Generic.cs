@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace InoSoft.Tools.Serialization
 {
@@ -12,7 +11,7 @@ namespace InoSoft.Tools.Serialization
     /// </remarks>
     public class Serializer<T>
     {
-        private Serializer _baseSerializer;
+        private readonly Serializer _baseSerializer;
 
         /// <summary>
         /// Creates serializer.
