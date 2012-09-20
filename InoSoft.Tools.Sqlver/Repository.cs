@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace InoSoft.Tools.SqlVersion
+namespace InoSoft.Tools.Sqlver
 {
     public class Repository
     {

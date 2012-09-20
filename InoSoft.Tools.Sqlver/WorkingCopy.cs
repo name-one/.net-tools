@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using InoSoft.Tools.Data;
 
-namespace InoSoft.Tools.SqlVersion
+namespace InoSoft.Tools.Sqlver
 {
     public class WorkingCopy
     {

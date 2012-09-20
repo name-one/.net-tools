@@ -9,7 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Data.Test", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Net", "InoSoft.Tools.Net\InoSoft.Tools.Net.csproj", "{A9187D23-A168-4071-8CC9-CF50E336D14B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.SqlVersion", "InoSoft.Tools.SqlVersion\InoSoft.Tools.SqlVersion.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Sqlver.ConsoleApp", "InoSoft.Tools.SqlVersion.Console\InoSoft.Tools.Sqlver.ConsoleApp.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Sqlver", "InoSoft.Tools.Sqlver\InoSoft.Tools.Sqlver.csproj", "{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Mvvm", "InoSoft.Tools.Mvvm\InoSoft.Tools.Mvvm.csproj", "{882D69C2-E58F-4F18-8EAC-36B1290F8535}"
 EndProject
@@ -75,6 +77,16 @@ Global
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|Mixed Platforms.Build.0 = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.ActiveCfg = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.Build.0 = Release|x86
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}.Release|x86.ActiveCfg = Release|Any CPU
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
