@@ -132,6 +132,21 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
+        /// Returns the specified number of objects from the head of the <see cref="CacheQueue{T}"/>
+        /// without removing them.
+        /// </summary>
+        /// <param name="count">Number of objects to peek at.</param>
+        /// <returns>
+        /// An array of objects from the head of the <see cref="CacheQueue{T}"/>. If there are less objects
+        /// than <paramref name="count"/>, all the objects are returned.
+        /// </returns>
+        /// <exception cref="System.InvalidOperationException">The <see cref="CacheQueue{T}"/> is empty.</exception>
+        public T[] PeekRange(int count)
+        {
+            return _queue.PeekRange(count);
+        }
+
+        /// <summary>
         /// Copies the <see cref="CacheQueue{T}"/> elements to a new array.
         /// </summary>
         /// <returns>
