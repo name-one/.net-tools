@@ -3,26 +3,25 @@
 namespace InoSoft.Tools
 {
     /// <summary>
-    /// Base class for asynchronous execution of some work with a minimum iteration time.
+    /// Provides a mechanism for asynchronous periodical execution of some work.
     /// </summary>
     public abstract class AsyncIterationRunner
     {
         private readonly int _iterationTime;
+        private bool _isRunning;
         private Thread _thread;
 
         /// <summary>
         /// Creates an instance of <see cref="AsyncIterationRunner"/> with the specified minimum iteration time.
         /// </summary>
-        /// <param name="iterationTime">Minimum iteration time in milliseconds.</param>
+        /// <param name="iterationTime">Minimum time between the start of each iteration in milliseconds.</param>
         protected AsyncIterationRunner(int iterationTime)
         {
             _iterationTime = iterationTime;
         }
 
-        private bool _isRunning;
-
         /// <summary>
-        /// True if <see cref="AsyncIterationRunner"/> is currently running.
+        /// Gets a value indicating whether this instance is currently running.
         /// </summary>
         public bool IsRunning
         {
@@ -30,7 +29,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Minimum iteration time in milliseconds.
+        /// Gets the minimum time between the start of each iteration in milliseconds.
         /// </summary>
         public int IterationTime
         {
@@ -38,7 +37,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Starts <see cref="AsyncIterationRunner"/> if it is not already running.
+        /// Starts this instance if it is not already running.
         /// </summary>
         public void Start()
         {
@@ -56,7 +55,7 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Stops <see cref="AsyncIterationRunner"/> if it is currently running.
+        /// Stops this instance if it is currently running.
         /// </summary>
         public void Stop()
         {
@@ -69,7 +68,8 @@ namespace InoSoft.Tools
         protected abstract void RunIteration();
 
         /// <summary>
-        /// Runs the <see cref="RunIteration"/> method until stopped.
+        /// Executes the <see cref="RunIteration"/> method periodically until stopped.
+        /// The minimum time between the executions is <see cref="IterationTime"/>.
         /// </summary>
         private void Execute()
         {

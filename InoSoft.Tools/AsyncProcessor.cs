@@ -4,6 +4,10 @@ using System.Threading;
 
 namespace InoSoft.Tools
 {
+    /// <summary>
+    /// Provides a mechanism for asynchronous processing of <see cref="T"/> objects in a queued manner.
+    /// </summary>
+    /// <typeparam name="T">Specifies the type of the items that are processed.</typeparam>
     public abstract class AsyncProcessor<T>
     {
         private readonly bool _isBackground;
@@ -14,11 +18,12 @@ namespace InoSoft.Tools
         private bool _isRunning;
 
         /// <summary>
-        /// Creates AsyncProcessor instance.
+        /// Creates an instance of <see cref="AsyncProcessor{T}"/>.
         /// </summary>
         /// <param name="isBackground">
-        /// Specifies whether the AsyncProcessor instance will be executed in a background thread and Stop() will not block.
-        /// Default is true.
+        /// Specifies whether the <see cref="AsyncProcessor{T}"/> instance will be executed
+        /// in a background thread and Stop() will not block.
+        /// Default is <c>true</c>.
         /// </param>
         protected AsyncProcessor(bool isBackground = true)
         {
@@ -27,11 +32,18 @@ namespace InoSoft.Tools
             _queueHasItemsEvent = new EventWaitHandle(false, EventResetMode.ManualReset);
         }
 
+        /// <summary>
+        /// Gets a value indicating whether this instance is running.
+        /// </summary>
         public bool IsRunning
         {
             get { return _isRunning; }
         }
 
+        /// <summary>
+        /// Enqueues a <see cref="T"/> item to be processed.
+        /// </summary>
+        /// <param name="item">Item to enqueue.</param>
         public void EnqueueItem(T item)
         {
             lock (_queue)
@@ -44,8 +56,14 @@ namespace InoSoft.Tools
             }
         }
 
+        /// <summary>
+        /// Starts this instance if it is not already running.
+        /// </summary>
         public void Start()
         {
+            if (_isRunning)
+                return;
+
             _isRunning = true;
             _dispatcherThread = new Thread(RunDispatcher) { IsBackground = _isBackground };
             _dispatcherThread.Start();
@@ -53,8 +71,14 @@ namespace InoSoft.Tools
             OnStart();
         }
 
+        /// <summary>
+        /// Stops this instance if it is currently running.
+        /// </summary>
         public void Stop()
         {
+            if (!_isRunning)
+                return;
+
             _isRunning = false;
             lock (_queue)
             {
@@ -69,20 +93,38 @@ namespace InoSoft.Tools
             OnStop();
         }
 
+        /// <summary>
+        /// Performs user-defined actions when an unhandled exception occurs in the <see cref="ProcessItem"/> method.
+        /// </summary>
+        /// <param name="item">The item that was being processed when the exception occured.</param>
+        /// <param name="ex">Exception that was not handled during the item processing.</param>
         protected virtual void OnProcessItemException(T item, Exception ex)
         {
         }
 
+        /// <summary>
+        /// Performs user-defined actions after the instance starts.
+        /// </summary>
         protected virtual void OnStart()
         {
         }
 
+        /// <summary>
+        /// Performs user-defined actions after the instance stops.
+        /// </summary>
         protected virtual void OnStop()
         {
         }
 
+        /// <summary>
+        /// Executes user-defined actions to process an item from the item queue.
+        /// </summary>
+        /// <param name="item">Item to process.</param>
         protected abstract void ProcessItem(T item);
 
+        /// <summary>
+        /// Runs the dispatcher thread.
+        /// </summary>
         private void RunDispatcher()
         {
             while (_isRunning)
@@ -94,27 +136,33 @@ namespace InoSoft.Tools
                 {
                     if (_queue.Count > 0)
                     {
+                        // If there are items in the queue, get the first of them.
                         item = _queue.Dequeue();
                         hasItem = true;
                     }
                     else
                     {
+                        // If there are no items, wait until one is added.
                         _queueHasItemsEvent.Reset();
                     }
                 }
 
                 lock (_processItemLock)
                 {
-                    if (hasItem)
+                    // If the queue did not yield any items initially, and an item was added afterwards,
+                    // continue and get the added item.
+                    if (!hasItem)
+                        continue;
+
+                    try
                     {
-                        try
-                        {
-                            ProcessItem(item);
-                        }
-                        catch (Exception ex)
-                        {
-                            OnProcessItemException(item, ex);
-                        }
+                        // Process the item.
+                        ProcessItem(item);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Perform user-defined actions for unhandled exception.
+                        OnProcessItemException(item, ex);
                     }
                 }
             }
