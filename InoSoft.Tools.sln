@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Net", "InoSof
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.SqlVersion", "InoSoft.Tools.SqlVersion\InoSoft.Tools.SqlVersion.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Mvvm", "InoSoft.Tools.Mvvm\InoSoft.Tools.Mvvm.csproj", "{882D69C2-E58F-4F18-8EAC-36B1290F8535}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,16 @@ Global
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|Mixed Platforms.Build.0 = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.ActiveCfg = Release|x86
 		{0120ED5E-01CF-4B03-956E-087E7390873D}.Release|x86.Build.0 = Release|x86
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Any CPU.Build.0 = Release|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
