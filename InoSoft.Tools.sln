@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.SqlVersion", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Mvvm", "InoSoft.Tools.Mvvm\InoSoft.Tools.Mvvm.csproj", "{882D69C2-E58F-4F18-8EAC-36B1290F8535}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Testing", "InoSoft.Tools.Testing\InoSoft.Tools.Testing.csproj", "{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,16 @@ Global
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{882D69C2-E58F-4F18-8EAC-36B1290F8535}.Release|x86.ActiveCfg = Release|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{4AC87F34-3041-47AC-97E3-5CA6D0508C7E}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
