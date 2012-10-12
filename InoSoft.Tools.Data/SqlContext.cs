@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
+using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection;
 
 namespace InoSoft.Tools.Data
 {
@@ -16,9 +21,9 @@ namespace InoSoft.Tools.Data
     /// thread, as mentioned above. This technique solves problem when EntityConnection reconnects each time
     /// it's used in a different thread.
     /// </remarks>
-    public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext
+    public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
     {
-        private readonly DbContext _dbContext;
+        private readonly SqlConnection _sqlConnection;
 
         /// <summary>
         /// Creates SqlContext.
@@ -26,7 +31,8 @@ namespace InoSoft.Tools.Data
         /// <param name="connectionString">SQL connection string, which context will use.</param>
         public SqlContext(string connectionString)
         {
-            _dbContext = new DbContext(connectionString);
+            _sqlConnection = new SqlConnection(connectionString);
+            _sqlConnection.Open();
             Start();
         }
 
@@ -38,19 +44,10 @@ namespace InoSoft.Tools.Data
         /// <param name="parameters">Optional named parameters.</param>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
-            // Check if query return type contains enum values and thus needs a proxy type.
-            bool needsProxy = false;
-            Type realType = elementType;
-            if (elementType != null && !SqlTypeHelper.IsSqlType(elementType) && elementType.ContainsEnums())
-            {
-                needsProxy = true;
-                realType = elementType.GetEnumlessProxy();
-            }
-
             // Create encapsulated query and push it into queue.
             var query = new SqlQuery
             {
-                ElementType = realType,
+                ElementType = elementType,
                 Sql = sql,
                 Parameters = parameters
             };
@@ -66,11 +63,6 @@ namespace InoSoft.Tools.Data
                 throw query.Exception;
             }
 
-            // Return query result.
-            if (needsProxy)
-            {
-                return ReflectionHelper.CloneArray(query.Result, realType, elementType);
-            }
             return query.Result;
         }
 
@@ -95,6 +87,14 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            _sqlConnection.Dispose();
+        }
+
+        /// <summary>
         /// Processes batches of SQL queries from queue.
         /// </summary>
         /// <param name="item">Encapsulated batch of queries.</param>
@@ -104,14 +104,55 @@ namespace InoSoft.Tools.Data
             {
                 try
                 {
-                    if (query.ElementType != null)
+                    using (var command = _sqlConnection.CreateCommand())
                     {
-                        query.Result = _dbContext.Database.SqlQuery(query.ElementType, query.Sql, query.Parameters)
-                            .Cast<object>().ToArray();
-                    }
-                    else
-                    {
-                        _dbContext.Database.ExecuteSqlCommand(query.Sql, query.Parameters);
+                        command.CommandText = query.Sql;
+                        command.Parameters.AddRange(query.Parameters);
+
+                        if (query.ElementType != null)
+                        {
+                            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo))
+                            {
+                                var properties = new List<PropertyInfo>();
+                                for (int i = 0; i < reader.FieldCount; i++)
+                                {
+                                    var prop = query.ElementType.GetProperty(reader.GetName(i));
+                                    properties.Add(prop);
+                                }
+
+                                var result = new ArrayList();
+                                if (SqlTypeHelper.IsSqlType(query.ElementType))
+                                {
+                                    while (reader.Read())
+                                    {
+                                        var sqlValue = reader.GetValue(0);
+                                        result.Add(sqlValue == DBNull.Value ? null : sqlValue);
+                                    }
+                                }
+                                else
+                                {
+                                    while (reader.Read())
+                                    {
+                                        var resultItem = Activator.CreateInstance(query.ElementType);
+                                        for (int i = 0; i < properties.Count; i++)
+                                        {
+                                            if (properties[i] != null)
+                                            {
+                                                var sqlValue = reader.GetValue(i);
+                                                properties[i].SetValue(resultItem, sqlValue == DBNull.Value ? null : sqlValue, null);
+                                            }
+                                        }
+                                        result.Add(resultItem);
+                                    }
+                                }
+
+                                query.Result = result.ToArray(query.ElementType);
+                            }
+                        }
+                        else
+                        {
+                            command.ExecuteNonQuery();
+                        }
                     }
                 }
                 catch (Exception ex)
