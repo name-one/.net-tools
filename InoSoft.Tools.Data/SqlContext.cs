@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
@@ -23,6 +22,21 @@ namespace InoSoft.Tools.Data
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
     {
+        private static readonly HashSet<Type> SqlTypes = new HashSet<Type>
+        {
+            typeof(bool),
+            typeof(byte),
+            typeof(byte[]),
+            typeof(decimal),
+            typeof(float),
+            typeof(int),
+            typeof(long),
+            typeof(short),
+            typeof(string),
+            typeof(DateTime),
+            typeof(Guid)
+        };
+
         private readonly SqlConnection _sqlConnection;
 
         /// <summary>
@@ -32,7 +46,6 @@ namespace InoSoft.Tools.Data
         public SqlContext(string connectionString)
         {
             _sqlConnection = new SqlConnection(connectionString);
-            _sqlConnection.Open();
             Start();
         }
 
@@ -104,24 +117,25 @@ namespace InoSoft.Tools.Data
             {
                 try
                 {
+                    // Connection may be used first time or closed by several exceptions, so try to open/reopen if it's so.
+                    if (_sqlConnection.State != ConnectionState.Open)
+                    {
+                        _sqlConnection.Open();
+                    }
+
                     using (var command = _sqlConnection.CreateCommand())
                     {
+                        // Init command SQL text and parameters.
                         command.CommandText = query.Sql;
                         command.Parameters.AddRange(query.Parameters);
 
                         if (query.ElementType != null)
                         {
+                            // We want command to have result of desired type.
                             using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo))
                             {
-                                var properties = new List<PropertyInfo>();
-                                for (int i = 0; i < reader.FieldCount; i++)
-                                {
-                                    var prop = query.ElementType.GetProperty(reader.GetName(i));
-                                    properties.Add(prop);
-                                }
-
                                 var result = new ArrayList();
-                                if (SqlTypeHelper.IsSqlType(query.ElementType))
+                                if (SqlTypes.Contains(query.ElementType))
                                 {
                                     while (reader.Read())
                                     {
@@ -131,11 +145,22 @@ namespace InoSoft.Tools.Data
                                 }
                                 else
                                 {
+                                    // Build list of property-infos, which match result set column names.
+                                    var properties = new List<PropertyInfo>();
+                                    for (int i = 0; i < reader.FieldCount; i++)
+                                    {
+                                        var prop = query.ElementType.GetProperty(reader.GetName(i));
+                                        properties.Add(prop);
+                                    }
+
+                                    // Fill result list with items.
                                     while (reader.Read())
                                     {
+                                        // Create object of desired type and set its properties.
                                         var resultItem = Activator.CreateInstance(query.ElementType);
                                         for (int i = 0; i < properties.Count; i++)
                                         {
+                                            // Property info may be null if there is column, which has no property to match.
                                             if (properties[i] != null)
                                             {
                                                 var sqlValue = reader.GetValue(i);
@@ -151,6 +176,7 @@ namespace InoSoft.Tools.Data
                         }
                         else
                         {
+                            // Just execute query, there is no need to return result.
                             command.ExecuteNonQuery();
                         }
                     }

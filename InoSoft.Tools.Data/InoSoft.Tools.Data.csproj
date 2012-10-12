@@ -31,7 +31,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="EntityFramework, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.Entity" />
@@ -49,7 +48,6 @@
     <Compile Include="SqlBatch.cs" />
     <Compile Include="SqlQuery.cs" />
     <Compile Include="SqlContext.cs" />
-    <Compile Include="SqlTypeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
