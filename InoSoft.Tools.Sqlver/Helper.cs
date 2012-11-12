@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 
 namespace InoSoft.Tools.Sqlver
 {
@@ -9,7 +7,7 @@ namespace InoSoft.Tools.Sqlver
     {
         public static bool Init(string repo, string sql)
         {
-            Repository repository = new Repository();
+            var repository = new Repository();
             repository.AddVersion(sql);
             if (repository.Save(repo))
             {
@@ -32,23 +30,30 @@ namespace InoSoft.Tools.Sqlver
                 Console.WriteLine("Repository save failed!!!");
                 return false;
             }
-            else
-            {
-                Console.WriteLine("Repository load failed!!!");
-                return false;
-            }
+            Console.WriteLine("Repository load failed!!!");
+            return false;
         }
 
         public static bool Checkout(string copy, string repo, string connection)
         {
-            if (new WorkingCopy()
+            try
             {
-                CurrentVersion = -1,
-                RepositoryPath = repo,
-                ConnectionString = connection
-            }.Save(copy))
+                if (!Directory.Exists(Path.GetDirectoryName(copy)))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(copy));
+                }
+                if (new WorkingCopy()
+                {
+                    CurrentVersion = -1,
+                    RepositoryPath = repo,
+                    ConnectionString = connection
+                }.Save(copy))
+                {
+                    return true;
+                } 
+            }
+            catch
             {
-                return true;
             }
             Console.WriteLine("Working copy save failed!!!");
             return false;
@@ -64,21 +69,15 @@ namespace InoSoft.Tools.Sqlver
                     Console.WriteLine("Update failed!!!");
                     return false;
                 }
-                else
+                if (workingCopy.Save(copy))
                 {
-                    if (workingCopy.Save(copy))
-                    {
-                        return true;
-                    }
-                    Console.WriteLine("Working copy save failed!!!");
-                    return false;
+                    return true;
                 }
-            }
-            else
-            {
-                Console.WriteLine("Working copy load failed!!!");
+                Console.WriteLine("Working copy save failed!!!");
                 return false;
             }
+            Console.WriteLine("Working copy load failed!!!");
+            return false;
         }
     }
 }
