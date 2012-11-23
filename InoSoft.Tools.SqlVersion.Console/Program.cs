@@ -96,7 +96,7 @@ namespace InoSoft.Tools.Sqlver.ConsoleApp
 
             Console.WriteLine("Not enough parameters!!!");
             Console.WriteLine();
-            using (var readmeStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("InoSoft.Tools.SqlVersion.Readme.txt"))
+            using (var readmeStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("InoSoft.Tools.Sqlver.ConsoleApp.Readme.txt"))
             using (var reader = new StreamReader(readmeStream))
             {
                 Console.WriteLine(reader.ReadToEnd());
