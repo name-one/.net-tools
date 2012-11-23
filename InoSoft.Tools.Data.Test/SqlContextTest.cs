@@ -1,7 +1,7 @@
-﻿using System;
+﻿using NUnit.Framework;
+using System;
 using System.Data.SqlClient;
 using System.Text;
-using NUnit.Framework;
 
 namespace InoSoft.Tools.Data.Test
 {

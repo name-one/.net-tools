@@ -54,12 +54,12 @@ namespace InoSoft.Tools.Sqlver
             return false;
         }
 
-        public static bool Update(string copy, int version = -1)
+        public static bool Update(string copy, int version = -1, int commandTimeout = 30)
         {
             WorkingCopy workingCopy = WorkingCopy.FromFile(copy);
             if (workingCopy != null)
             {
-                if (!workingCopy.Update(version))
+                if (!workingCopy.Update(version, commandTimeout))
                 {
                     Console.WriteLine("Update failed!!!");
                     return false;

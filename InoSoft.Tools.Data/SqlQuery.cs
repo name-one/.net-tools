@@ -18,6 +18,11 @@ namespace InoSoft.Tools.Data
         public string Sql { get; set; }
 
         /// <summary>
+        /// Query timeout in seconds.
+        /// </summary>
+        public int Timeout { get; set; }
+
+        /// <summary>
         /// Input parameters of query.
         /// </summary>
         public object[] Parameters { get; set; }

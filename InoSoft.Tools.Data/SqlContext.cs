@@ -38,15 +38,26 @@ namespace InoSoft.Tools.Data
         };
 
         private readonly SqlConnection _sqlConnection;
+        private int _commandTimeout;
 
         /// <summary>
         /// Creates SqlContext.
         /// </summary>
         /// <param name="connectionString">SQL connection string, which context will use.</param>
-        public SqlContext(string connectionString)
+        public SqlContext(string connectionString, int commandTimeout = 30)
         {
             _sqlConnection = new SqlConnection(connectionString);
+            _commandTimeout = commandTimeout;
             Start();
+        }
+
+        /// <summary>
+        /// Query timeout in seconds.
+        /// </summary>
+        public int CommandTimeout
+        {
+            get { return _commandTimeout; }
+            set { _commandTimeout = value; }
         }
 
         /// <summary>
@@ -62,7 +73,8 @@ namespace InoSoft.Tools.Data
             {
                 ElementType = elementType,
                 Sql = sql,
-                Parameters = parameters
+                Parameters = parameters,
+                Timeout = _commandTimeout
             };
             var batch = new SqlBatch { Queries = new[] { query } };
             EnqueueItem(batch);
@@ -128,6 +140,7 @@ namespace InoSoft.Tools.Data
                         // Init command SQL text and parameters.
                         command.CommandText = query.Sql;
                         command.Parameters.AddRange(query.Parameters);
+                        command.CommandTimeout = query.Timeout;
 
                         if (query.ElementType != null)
                         {

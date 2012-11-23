@@ -27,3 +27,4 @@ update - Updates working copy if corresponding repository has new versions.
     version - Optional parameter. Specifies version number and working copy 
               will be updated up to it. If not specified, head repository 
               version will be taken.
+    timeout - per-query timeout in seconds. Parameter is optional, default value is 30.

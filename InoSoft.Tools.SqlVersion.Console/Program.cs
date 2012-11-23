@@ -64,6 +64,16 @@ namespace InoSoft.Tools.Sqlver.ConsoleApp
                             break;
                         }
                     case "update":
+                        int timeout = 30;
+                        if (dictionary.ContainsKey("timeout"))
+                        {
+                            if (!Int32.TryParse(dictionary["timeout"], out timeout))
+                            {
+                                Console.WriteLine("Incorrect timeout specified!!!");
+                                return 1;
+                            }
+                        }
+
                         if (dictionary.ContainsKey("copy"))
                         {
                             int version = -1;
