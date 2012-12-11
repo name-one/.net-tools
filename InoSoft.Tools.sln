@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Data.Test", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Net", "InoSoft.Tools.Net\InoSoft.Tools.Net.csproj", "{A9187D23-A168-4071-8CC9-CF50E336D14B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Sqlver.ConsoleApp", "InoSoft.Tools.SqlVersion.Console\InoSoft.Tools.Sqlver.ConsoleApp.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Sqlver.ConsoleApp", "InoSoft.Tools.Sqlver.Console\InoSoft.Tools.Sqlver.ConsoleApp.csproj", "{0120ED5E-01CF-4B03-956E-087E7390873D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InoSoft.Tools.Sqlver", "InoSoft.Tools.Sqlver\InoSoft.Tools.Sqlver.csproj", "{C5A2DCE5-BCBB-449C-8D7D-4812C7A8933B}"
 EndProject
