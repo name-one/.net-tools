@@ -97,8 +97,8 @@ namespace InoSoft.Tools.Sqlver
                 var sb = new StringBuilder();
                 while (!file.EndOfStream)
                 {
-                    var line = file.ReadLine().Trim();
-                    if (line.ToUpper() != "GO")
+                    var line = file.ReadLine();
+                    if (line.Trim().ToUpper() != "GO")
                     {
                         sb.AppendLine(line);
                     }
