@@ -39,16 +39,35 @@ namespace InoSoft.Tools.Data
 
         private readonly SqlConnection _sqlConnection;
         private int _commandTimeout;
+        private bool _createDatabase;
+        private string _connectionString;
 
         /// <summary>
         /// Creates SqlContext.
         /// </summary>
         /// <param name="connectionString">SQL connection string, which context will use.</param>
-        public SqlContext(string connectionString, int commandTimeout = 30)
+        public SqlContext(string connectionString, int commandTimeout, bool createDatabase)
         {
+            _connectionString = connectionString;
             _sqlConnection = new SqlConnection(connectionString);
             _commandTimeout = commandTimeout;
+            _createDatabase = createDatabase;
             Start();
+        }
+
+        public SqlContext(string connectionString, bool createDatabase)
+            : this(connectionString, 30, createDatabase)
+        {
+        }
+
+        public SqlContext(string connectionString, int commandTimeout)
+            : this(connectionString, commandTimeout, false)
+        {
+        }
+
+        public SqlContext(string connectionString)
+            : this(connectionString, 30, false)
+        {
         }
 
         /// <summary>
@@ -132,7 +151,33 @@ namespace InoSoft.Tools.Data
                     // Connection may be used first time or closed by several exceptions, so try to open/reopen if it's so.
                     if (_sqlConnection.State != ConnectionState.Open)
                     {
-                        _sqlConnection.Open();
+                        try
+                        {
+                            _sqlConnection.Open();
+                        }
+                        catch (SqlException ex)
+                        {
+                            if (ex.Number == 4060 && _createDatabase)
+                            {
+                                var connectionString = new SqlConnectionStringBuilder(_connectionString);
+                                var dbName = connectionString.InitialCatalog;
+                                connectionString.InitialCatalog = "master";
+                                using (var connection = new SqlConnection(connectionString.ToString()))
+                                {
+                                    connection.Open();
+                                    var command = connection.CreateCommand();
+                                    command.CommandText = "CREATE DATABASE " + dbName;
+                                    command.CommandTimeout = _commandTimeout;
+                                    command.ExecuteNonQuery();
+                                }
+
+                                _sqlConnection.Open();
+                            }
+                            else
+                            {
+                                throw;
+                            }
+                        }
                     }
 
                     using (var command = _sqlConnection.CreateCommand())

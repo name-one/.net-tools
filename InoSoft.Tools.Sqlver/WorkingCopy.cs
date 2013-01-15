@@ -1,6 +1,7 @@
 ﻿using InoSoft.Tools.Data;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -44,7 +45,7 @@ namespace InoSoft.Tools.Sqlver
 
         public bool Update(int version = -1, int commandTimeout = 30)
         {
-            SqlContext context = new SqlContext(ConnectionString, commandTimeout);
+            SqlContext context = new SqlContext(ConnectionString, commandTimeout, true);
             Repository repository = Repository.FromFile(RepositoryPath);
             if (repository != null)
             {
