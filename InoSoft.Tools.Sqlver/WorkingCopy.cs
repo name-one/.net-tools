@@ -1,10 +1,8 @@
-﻿using InoSoft.Tools.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
 using System.Text;
+using InoSoft.Tools.Data;
 
 namespace InoSoft.Tools.Sqlver
 {
@@ -20,7 +18,7 @@ namespace InoSoft.Tools.Sqlver
         {
             try
             {
-                return XmlHelper.LoadObjectFromFile<WorkingCopy>(path);
+                return XmlHelper.FromXml<WorkingCopy>(path);
             }
             catch (Exception ex)
             {
@@ -33,7 +31,7 @@ namespace InoSoft.Tools.Sqlver
         {
             try
             {
-                XmlHelper.SaveObjectToFile<WorkingCopy>(this, path);
+                XmlHelper.ToXml(this, path);
                 return true;
             }
             catch (Exception ex)
@@ -45,49 +43,46 @@ namespace InoSoft.Tools.Sqlver
 
         public bool Update(int version = -1, int commandTimeout = 30)
         {
-            SqlContext context = new SqlContext(ConnectionString, commandTimeout, true);
+            var context = new SqlContext(ConnectionString, commandTimeout, true);
             Repository repository = Repository.FromFile(RepositoryPath);
-            if (repository != null)
-            {
-                Console.WriteLine("Repository opened successfully.");
-                if (version == -1)
-                {
-                    version = repository.LastVersion;
-                }
-                if (version == this.CurrentVersion)
-                {
-                    Console.WriteLine("Already up-to-date!");
-                }
-                else if (version < 0 || version < CurrentVersion || version > repository.LastVersion)
-                {
-                    Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!", version, CurrentVersion, repository.LastVersion);
-                    return false;
-                }
-                else
-                {
-                    for (int index = this.CurrentVersion + 1; index <= version; ++index)
-                    {
-                        try
-                        {
-                            Increment(repository.Versions[index], context);
-                            CurrentVersion++;
-                            Console.WriteLine("Updating to version {0} \t success", index);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine("Updating to version {0} \t fail!!!", index);
-                            Console.WriteLine(ex.Message);
-                            return false;
-                        }
-                    }
-                }
+            if (repository == null)
+                return false;
 
-                return true;
+            Console.WriteLine("Repository opened successfully.");
+            if (version == -1)
+            {
+                version = repository.LastVersion;
+            }
+            if (version == CurrentVersion)
+            {
+                Console.WriteLine("Already up-to-date!");
+            }
+            else if (version < 0 || version < CurrentVersion || version > repository.LastVersion)
+            {
+                Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!",
+                    version, CurrentVersion, repository.LastVersion);
+                return false;
             }
             else
             {
-                return false;
+                for (int index = CurrentVersion + 1; index <= version; ++index)
+                {
+                    try
+                    {
+                        Increment(repository.Versions[index], context);
+                        CurrentVersion++;
+                        Console.WriteLine("Update to version {0} \t has succeeded.", index);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Update to version {0} \t has failed!!!", index);
+                        Console.WriteLine(ex.Message);
+                        return false;
+                    }
+                }
             }
+
+            return true;
         }
 
         private void Increment(string versionSql, SqlContext context)
@@ -115,9 +110,7 @@ namespace InoSoft.Tools.Sqlver
             foreach (var query in queries)
             {
                 if (query.Trim() == "")
-                {
                     continue;
-                }
 
                 try
                 {

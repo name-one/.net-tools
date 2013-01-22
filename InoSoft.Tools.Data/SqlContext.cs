@@ -12,13 +12,10 @@ namespace InoSoft.Tools.Data
     /// Context for executing SQL queries.
     /// </summary>
     /// <remarks>
-    /// Works synchronously, but in separate thread. Only one thread and one execution queue are created,
+    /// Works synchronously, but in a separate thread. Only one thread and one execution queue a created,
     /// so single context can operate only single SQL query at the same time. For simultaneous access
     /// miltiple contexts must be used. Note that some versions of MSSQL can't operate queries in parallel.
     /// In this case using single context for the whole application is recommended.
-    /// This context is asynchronous wrapper of EF 4.1 DbContext and its best advantage is that it works in single
-    /// thread, as mentioned above. This technique solves problem when EntityConnection reconnects each time
-    /// it's used in a different thread.
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
     {
@@ -37,15 +34,21 @@ namespace InoSoft.Tools.Data
             typeof(Guid)
         };
 
+        private readonly string _connectionString;
+        private readonly bool _createDatabase;
         private readonly SqlConnection _sqlConnection;
         private int _commandTimeout;
-        private bool _createDatabase;
-        private string _connectionString;
 
         /// <summary>
-        /// Creates SqlContext.
+        /// Creates an instance of <see cref="SqlContext"/>.
         /// </summary>
-        /// <param name="connectionString">SQL connection string, which context will use.</param>
+        /// <param name="connectionString">The connection used to open the SQL Server database.</param>
+        /// <param name="commandTimeout">
+        /// The time in seconds to wait for the command to execute. The default is 30 seconds.
+        /// </param>
+        /// <param name="createDatabase">
+        /// Specifies whether a database should be created if it does not exist. The default is <c>false</c>.
+        /// </param>
         public SqlContext(string connectionString, int commandTimeout, bool createDatabase)
         {
             _connectionString = connectionString;
@@ -55,16 +58,34 @@ namespace InoSoft.Tools.Data
             Start();
         }
 
+        /// <summary>
+        /// Creates an instance of <see cref="SqlContext"/>.
+        /// </summary>
+        /// <param name="connectionString">The connection used to open the SQL Server database.</param>
+        /// <param name="createDatabase">
+        /// Specifies whether a database should be created if it does not exist. The default is <c>false</c>.
+        /// </param>
         public SqlContext(string connectionString, bool createDatabase)
             : this(connectionString, 30, createDatabase)
         {
         }
 
+        /// <summary>
+        /// Creates an instance of <see cref="SqlContext"/>.
+        /// </summary>
+        /// <param name="connectionString">The connection used to open the SQL Server database.</param>
+        /// <param name="commandTimeout">
+        /// The time in seconds to wait for the command to execute. The default is 30 seconds.
+        /// </param>
         public SqlContext(string connectionString, int commandTimeout)
             : this(connectionString, commandTimeout, false)
         {
         }
 
+        /// <summary>
+        /// Creates an instance of <see cref="SqlContext"/>.
+        /// </summary>
+        /// <param name="connectionString">The connection used to open the SQL Server database.</param>
         public SqlContext(string connectionString)
             : this(connectionString, 30, false)
         {
@@ -80,14 +101,22 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Executes SQL command, which returns array of elements.
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        /// <param name="elementType">Type of elements or null if we don't need to return query result.</param>
+        public void Dispose()
+        {
+            _sqlConnection.Dispose();
+        }
+
+        /// <summary>
+        /// Executes an SQL command that returns an array of elements.
+        /// </summary>
+        /// <param name="elementType">Type of the elements, or <c>null</c> if no query result is expected.</param>
         /// <param name="sql">SQL query string.</param>
         /// <param name="parameters">Optional named parameters.</param>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
-            // Create encapsulated query and push it into queue.
+            // Create an encapsulated query and push it into the queue.
             var query = new SqlQuery
             {
                 ElementType = elementType,
@@ -98,12 +127,12 @@ namespace InoSoft.Tools.Data
             var batch = new SqlBatch { Queries = new[] { query } };
             EnqueueItem(batch);
 
-            // Wait until query is executed.
+            // Wait until the query is executed.
             batch.WaitSignal();
 
             if (query.Exception != null)
             {
-                // Rethrow the exception if it occured.
+                // Rethrow the exception if one has occured.
                 throw query.Exception;
             }
 
@@ -131,14 +160,6 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-        /// </summary>
-        public void Dispose()
-        {
-            _sqlConnection.Dispose();
-        }
-
-        /// <summary>
         /// Processes batches of SQL queries from queue.
         /// </summary>
         /// <param name="item">Encapsulated batch of queries.</param>
@@ -159,18 +180,7 @@ namespace InoSoft.Tools.Data
                         {
                             if (ex.Number == 4060 && _createDatabase)
                             {
-                                var connectionString = new SqlConnectionStringBuilder(_connectionString);
-                                var dbName = connectionString.InitialCatalog;
-                                connectionString.InitialCatalog = "master";
-                                using (var connection = new SqlConnection(connectionString.ToString()))
-                                {
-                                    connection.Open();
-                                    var command = connection.CreateCommand();
-                                    command.CommandText = "CREATE DATABASE " + dbName;
-                                    command.CommandTimeout = _commandTimeout;
-                                    command.ExecuteNonQuery();
-                                }
-
+                                CreateDatabase();
                                 _sqlConnection.Open();
                             }
                             else
@@ -192,42 +202,9 @@ namespace InoSoft.Tools.Data
                             // We want command to have result of desired type.
                             using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo))
                             {
-                                var result = new ArrayList();
-                                if (SqlTypes.Contains(query.ElementType))
-                                {
-                                    while (reader.Read())
-                                    {
-                                        var sqlValue = reader.GetValue(0);
-                                        result.Add(sqlValue == DBNull.Value ? null : sqlValue);
-                                    }
-                                }
-                                else
-                                {
-                                    // Build list of property-infos, which match result set column names.
-                                    var properties = new List<PropertyInfo>();
-                                    for (int i = 0; i < reader.FieldCount; i++)
-                                    {
-                                        var prop = query.ElementType.GetProperty(reader.GetName(i));
-                                        properties.Add(prop);
-                                    }
-
-                                    // Fill result list with items.
-                                    while (reader.Read())
-                                    {
-                                        // Create object of desired type and set its properties.
-                                        var resultItem = Activator.CreateInstance(query.ElementType);
-                                        for (int i = 0; i < properties.Count; i++)
-                                        {
-                                            // Property info may be null if there is column, which has no property to match.
-                                            if (properties[i] != null)
-                                            {
-                                                var sqlValue = reader.GetValue(i);
-                                                properties[i].SetValue(resultItem, sqlValue == DBNull.Value ? null : sqlValue, null);
-                                            }
-                                        }
-                                        result.Add(resultItem);
-                                    }
-                                }
+                                ArrayList result = SqlTypes.Contains(query.ElementType)
+                                    ? ReadSqlTypeResult(reader)
+                                    : ReadCustomTypeResult(reader, query.ElementType);
 
                                 query.Result = result.ToArray(query.ElementType);
                             }
@@ -246,6 +223,82 @@ namespace InoSoft.Tools.Data
                 }
             }
             item.Signal();
+        }
+
+        /// <summary>
+        /// Reads a result set of the specified custom type.
+        /// </summary>
+        /// <param name="reader">Data reader to read the result from.</param>
+        /// <param name="elementType">Custom element type.</param>
+        /// <returns>
+        /// A result set of the specified type.
+        /// </returns>
+        private static ArrayList ReadCustomTypeResult(IDataReader reader, Type elementType)
+        {
+            var result = new ArrayList();
+
+            // Build list of property-infos, which match result set column names.
+            var properties = new List<PropertyInfo>();
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                var prop = elementType.GetProperty(reader.GetName(i));
+                properties.Add(prop);
+            }
+
+            // Fill result list with items.
+            while (reader.Read())
+            {
+                // Create object of desired type and set its properties.
+                var resultItem = Activator.CreateInstance(elementType);
+                for (int i = 0; i < properties.Count; i++)
+                {
+                    // Property info may be null if there is column, which has no property to match.
+                    if (properties[i] != null)
+                    {
+                        var sqlValue = reader.GetValue(i);
+                        properties[i].SetValue(resultItem, sqlValue == DBNull.Value ? null : sqlValue, null);
+                    }
+                }
+                result.Add(resultItem);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a result set of one of the default SQL types.
+        /// </summary>
+        /// <param name="reader">Data reader to read the result from.</param>
+        /// <returns>
+        /// A result set.
+        /// </returns>
+        /// <seealso cref="SqlTypes"/>
+        private static ArrayList ReadSqlTypeResult(SqlDataReader reader)
+        {
+            var result = new ArrayList();
+            while (reader.Read())
+            {
+                var sqlValue = reader.GetValue(0);
+                result.Add(sqlValue == DBNull.Value ? null : sqlValue);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a database from the connection string.
+        /// </summary>
+        private void CreateDatabase()
+        {
+            var connectionString = new SqlConnectionStringBuilder(_connectionString);
+            var dbName = connectionString.InitialCatalog;
+            connectionString.InitialCatalog = "master";
+            using (var connection = new SqlConnection(connectionString.ToString()))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = "CREATE DATABASE " + dbName;
+                command.CommandTimeout = _commandTimeout;
+                command.ExecuteNonQuery();
+            }
         }
     }
 }
