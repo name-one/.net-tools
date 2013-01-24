@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Text;
 
 namespace InoSoft.Tools.Data.Test
@@ -147,6 +148,22 @@ namespace InoSoft.Tools.Data.Test
             var testText = sb.ToString();
             var resultText = context.Procedures.ProcessText(testText);
             Assert.AreEqual(testText, resultText);
+        }
+
+        [Test]
+        public void CreateDatabase()
+        {
+            var master = new SqlContext("data source=.\\sqlexpress;initial catalog=master;integrated security=true");
+            try
+            {
+                master.Execute("DROP DATABASE nonexistent");
+            }
+            catch
+            { }
+
+            var nonexistent = new SqlContext("data source=.\\sqlexpress;initial catalog=nonexistent;integrated security=true", true);
+            int hundred = nonexistent.Execute<int>("SELECT 100").Single();
+            Assert.AreEqual(100, hundred);
         }
 
         private void InsertIntoHuman(SqlContext context, Human human)

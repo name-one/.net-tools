@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 
 namespace InoSoft.Tools.Data
 {
@@ -19,6 +20,16 @@ namespace InoSoft.Tools.Data
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
     {
+        /// <summary>
+        /// How many times will SqlContext try to connect just created database.
+        /// </summary>
+        public static readonly int CreateDatabaseRetryCount = 30;
+
+        /// <summary>
+        /// How many milliseconds will SqlContext wait betweet connection attempts to just created database.
+        /// </summary>
+        public static readonly int CreateDatabaseRetryInterval = 1000;
+
         private static readonly HashSet<Type> SqlTypes = new HashSet<Type>
         {
             typeof(bool),
@@ -36,7 +47,7 @@ namespace InoSoft.Tools.Data
 
         private readonly string _connectionString;
         private readonly bool _createDatabase;
-        private readonly SqlConnection _sqlConnection;
+        private SqlConnection _sqlConnection;
         private int _commandTimeout;
 
         /// <summary>
@@ -52,7 +63,7 @@ namespace InoSoft.Tools.Data
         public SqlContext(string connectionString, int commandTimeout, bool createDatabase)
         {
             _connectionString = connectionString;
-            _sqlConnection = new SqlConnection(connectionString);
+            CreateConnection();
             _commandTimeout = commandTimeout;
             _createDatabase = createDatabase;
             Start();
@@ -181,7 +192,6 @@ namespace InoSoft.Tools.Data
                             if (ex.Number == 4060 && _createDatabase)
                             {
                                 CreateDatabase();
-                                _sqlConnection.Open();
                             }
                             else
                             {
@@ -284,7 +294,19 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Creates a database from the connection string.
+        /// Creates a connection from the connection string.
+        /// </summary>
+        private void CreateConnection()
+        {
+            if (_sqlConnection != null)
+            {
+                _sqlConnection.Dispose();
+            }
+            _sqlConnection = new SqlConnection(_connectionString);
+        }
+
+        /// <summary>
+        /// Creates a database from the connection string. After it, tries to connect to the database, which user demands.
         /// </summary>
         private void CreateDatabase()
         {
@@ -298,6 +320,25 @@ namespace InoSoft.Tools.Data
                 command.CommandText = "CREATE DATABASE " + dbName;
                 command.CommandTimeout = _commandTimeout;
                 command.ExecuteNonQuery();
+            }
+
+            // SQL server may not create the db immediately, so we have set if retrials.
+            for (int i = 0; i < CreateDatabaseRetryCount; i++)
+            {
+                try
+                {
+                    _sqlConnection.Open();
+                    break;
+                }
+                catch (SqlException ex)
+                {
+                    // Rethrow exception if we couldn't connect not because the database not exists.
+                    if (ex.Number != 4060)
+                    {
+                        throw;
+                    }
+                }
+                Thread.Sleep(CreateDatabaseRetryInterval);
             }
         }
     }
