@@ -116,7 +116,7 @@ namespace InoSoft.Tools
                 throw new ArgumentNullException("path");
 
             var directory = Path.GetDirectoryName(path);
-            if (directory != null && !Directory.Exists(directory))
+            if (!String.IsNullOrWhiteSpace(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
