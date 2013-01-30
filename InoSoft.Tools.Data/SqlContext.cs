@@ -20,16 +20,6 @@ namespace InoSoft.Tools.Data
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
     {
-        /// <summary>
-        /// How many times will SqlContext try to connect just created database.
-        /// </summary>
-        public static readonly int CreateDatabaseRetryCount = 30;
-
-        /// <summary>
-        /// How many milliseconds will SqlContext wait betweet connection attempts to just created database.
-        /// </summary>
-        public static readonly int CreateDatabaseRetryInterval = 1000;
-
         private static readonly HashSet<Type> SqlTypes = new HashSet<Type>
         {
             typeof(bool),
@@ -47,8 +37,10 @@ namespace InoSoft.Tools.Data
 
         private readonly string _connectionString;
         private readonly bool _createDatabase;
-        private SqlConnection _sqlConnection;
         private int _commandTimeout;
+        private int _createDatabaseRetryCount = 30;
+        private int _createDatabaseRetryInterval = 1000;
+        private SqlConnection _sqlConnection;
 
         /// <summary>
         /// Creates an instance of <see cref="SqlContext"/>.
@@ -109,6 +101,32 @@ namespace InoSoft.Tools.Data
         {
             get { return _commandTimeout; }
             set { _commandTimeout = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the amount of retries to connect to just created database.
+        /// </summary>
+        public int CreateDatabaseRetryCount
+        {
+            get { return _createDatabaseRetryCount; }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException("value", "Value must be greater than zero.");
+                _createDatabaseRetryCount = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the time in milliseconds to wait between connection attempts to just created database.
+        /// </summary>
+        public int CreateDatabaseRetryInterval
+        {
+            get { return _createDatabaseRetryInterval; }
+            set
+            {
+                if (value < 1) throw new ArgumentOutOfRangeException("value", "Value must be greater than zero.");
+                _createDatabaseRetryInterval = value;
+            }
         }
 
         /// <summary>
@@ -192,6 +210,7 @@ namespace InoSoft.Tools.Data
                             if (ex.Number == 4060 && _createDatabase)
                             {
                                 CreateDatabase();
+                                OpenConnection();
                             }
                             else
                             {
@@ -306,7 +325,7 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Creates a database from the connection string. After it, tries to connect to the database, which user demands.
+        /// Creates a database from the connection string.
         /// </summary>
         private void CreateDatabase()
         {
@@ -321,9 +340,18 @@ namespace InoSoft.Tools.Data
                 command.CommandTimeout = _commandTimeout;
                 command.ExecuteNonQuery();
             }
+        }
 
-            // SQL server may not create the db immediately, so we have set if retrials.
-            for (int i = 0; i < CreateDatabaseRetryCount; i++)
+        /// <summary>
+        /// Tries to connect to the database specified in the connection string
+        /// <see cref="CreateDatabaseRetryCount"/> times.
+        /// </summary>
+        /// <remarks>
+        /// SQL server may not create a database immediately, thus some retries can be performed.
+        /// </remarks>
+        private void OpenConnection()
+        {
+            for (int i = 0; i < _createDatabaseRetryCount; i++)
             {
                 try
                 {
@@ -332,13 +360,13 @@ namespace InoSoft.Tools.Data
                 }
                 catch (SqlException ex)
                 {
-                    // Rethrow exception if we couldn't connect not because the database not exists.
+                    // Rethrow exception if we couldn't connect not because the database does not exist.
                     if (ex.Number != 4060)
                     {
                         throw;
                     }
                 }
-                Thread.Sleep(CreateDatabaseRetryInterval);
+                Thread.Sleep(_createDatabaseRetryInterval);
             }
         }
     }
