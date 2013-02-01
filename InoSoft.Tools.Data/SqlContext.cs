@@ -132,7 +132,7 @@ namespace InoSoft.Tools.Data
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
-        public void Dispose()
+        public virtual void Dispose()
         {
             _sqlConnection.Dispose();
         }
@@ -231,11 +231,11 @@ namespace InoSoft.Tools.Data
                             // We want command to have result of desired type.
                             using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo))
                             {
-                                ArrayList result = SqlTypes.Contains(query.ElementType)
+                                List<object> result = SqlTypes.Contains(query.ElementType)
                                     ? ReadSqlTypeResult(reader)
                                     : ReadCustomTypeResult(reader, query.ElementType);
 
-                                query.Result = result.ToArray(query.ElementType);
+                                query.Result = result.ToArray();
                             }
                         }
                         else
@@ -262,13 +262,13 @@ namespace InoSoft.Tools.Data
         /// <returns>
         /// A result set of the specified type.
         /// </returns>
-        private static ArrayList ReadCustomTypeResult(IDataReader reader, Type elementType)
+        private static List<object> ReadCustomTypeResult(SqlDataReader reader, Type elementType)
         {
-            var result = new ArrayList();
+            var result = new List<object>();
 
             // Build list of property-infos, which match result set column names.
             var properties = new List<PropertyInfo>();
-            for (int i = 0; i < reader.FieldCount; i++)
+            for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
                 var prop = elementType.GetProperty(reader.GetName(i));
                 properties.Add(prop);
@@ -301,9 +301,9 @@ namespace InoSoft.Tools.Data
         /// A result set.
         /// </returns>
         /// <seealso cref="SqlTypes"/>
-        private static ArrayList ReadSqlTypeResult(SqlDataReader reader)
+        private static List<object> ReadSqlTypeResult(SqlDataReader reader)
         {
-            var result = new ArrayList();
+            var result = new List<object>();
             while (reader.Read())
             {
                 var sqlValue = reader.GetValue(0);
