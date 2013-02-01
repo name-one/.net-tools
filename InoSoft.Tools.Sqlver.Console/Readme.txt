@@ -20,6 +20,8 @@ checkout - Initializes working copy (database state).
     copy - Path to working copy description file.
     repo - Path to repository description file to get versions from it.
     connection - Connection string to pre-created empty database.
+    unicode - True or false, indicating whether to use Unicode. 
+              Optional, default is false.
 
 update - Updates working copy if corresponding repository has new versions.
     Parameters:
@@ -27,4 +29,5 @@ update - Updates working copy if corresponding repository has new versions.
     version - Optional parameter. Specifies version number and working copy 
               will be updated up to it. If not specified, head repository 
               version will be taken.
-    timeout - per-query timeout in seconds. Parameter is optional, default value is 30.
+    timeout - Per-query timeout in seconds. 
+              Parameter is optional, default value is 30.

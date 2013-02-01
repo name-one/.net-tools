@@ -57,7 +57,12 @@ namespace InoSoft.Tools.Sqlver.ConsoleApp
                     case "checkout":
                         if (dictionary.ContainsKey("copy") && dictionary.ContainsKey("repo") && dictionary.ContainsKey("connection"))
                         {
-                            return Helper.Checkout(dictionary["copy"], dictionary["repo"], dictionary["connection"]) ? 0 : 1;
+                            bool unicode = false;
+                            if (dictionary.ContainsKey("unicode"))
+                            {
+                                Boolean.TryParse(dictionary["unicode"], out unicode);
+                            }
+                            return Helper.Checkout(dictionary["copy"], dictionary["repo"], dictionary["connection"], unicode) ? 0 : 1;
                         }
                         else
                         {

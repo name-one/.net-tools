@@ -3,8 +3,17 @@ using System.IO;
 
 namespace InoSoft.Tools.Sqlver
 {
+    /// <summary>
+    /// Contains methods, which perform all issqlver operations.
+    /// </summary>
     public static class Helper
     {
+        /// <summary>
+        /// Initializes a repository.
+        /// </summary>
+        /// <param name="repo">Path to the repository file.</param>
+        /// <param name="sql">Path to the initial SQL script.</param>
+        /// <returns>True if successful.</returns>
         public static bool Init(string repo, string sql)
         {
             var repository = new Repository();
@@ -17,6 +26,12 @@ namespace InoSoft.Tools.Sqlver
             return false;
         }
 
+        /// <summary>
+        /// Commits new version to a repositoty.
+        /// </summary>
+        /// <param name="repo">Path to the repository file.</param>
+        /// <param name="sql">Path to the new version SQL file.</param>
+        /// <returns>True if successful.</returns>
         public static bool Commit(string repo, string sql)
         {
             Repository repository = Repository.FromFile(repo);
@@ -34,7 +49,14 @@ namespace InoSoft.Tools.Sqlver
             return false;
         }
 
-        public static bool Checkout(string copy, string repo, string connection)
+        /// <summary>
+        /// Creates new working copy and binds it with repository.
+        /// </summary>
+        /// <param name="copy">Path to the working copy file.</param>
+        /// <param name="repo">Path to the repository.</param>
+        /// <param name="connection">SQL server connection string.</param>
+        /// <returns>True if successful.</returns>
+        public static bool Checkout(string copy, string repo, string connection, bool unicode = false)
         {
             try
             {
@@ -46,7 +68,8 @@ namespace InoSoft.Tools.Sqlver
                 {
                     CurrentVersion = -1,
                     RepositoryPath = repo,
-                    ConnectionString = connection
+                    ConnectionString = connection,
+                    Unicode = unicode,
                 }.Save(copy))
                 {
                     return true;
@@ -59,6 +82,13 @@ namespace InoSoft.Tools.Sqlver
             return false;
         }
 
+        /// <summary>
+        /// Updates existing working copy.
+        /// </summary>
+        /// <param name="copy">Path to the working copy file.</param>
+        /// <param name="version">Version to which we want to update. Minus one stands for the latest.</param>
+        /// <param name="commandTimeout">Command timeout in seconds.</param>
+        /// <returns>True if successful.</returns>
         public static bool Update(string copy, int version = -1, int commandTimeout = 30)
         {
             WorkingCopy workingCopy = WorkingCopy.FromFile(copy);

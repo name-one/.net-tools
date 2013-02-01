@@ -6,14 +6,36 @@ using InoSoft.Tools.Data;
 
 namespace InoSoft.Tools.Sqlver
 {
+    /// <summary>
+    /// Serializable working copy, which indicates current version and connection parameters.
+    /// </summary>
     public class WorkingCopy
     {
+        /// <summary>
+        /// Connection string to the database.
+        /// </summary>
         public string ConnectionString { get; set; }
 
+        /// <summary>
+        /// Current version within repository.
+        /// </summary>
         public int CurrentVersion { get; set; }
 
+        /// <summary>
+        /// Path to the repository file.
+        /// </summary>
         public string RepositoryPath { get; set; }
 
+        /// <summary>
+        /// Indicates whether to use Unicode when update the working copy.
+        /// </summary>
+        public bool Unicode { get; set; }
+
+        /// <summary>
+        /// Loads working copy from XML file.
+        /// </summary>
+        /// <param name="path">Path to XML file.</param>
+        /// <returns>Loaded working copy or null depending on operation success.</returns>
         public static WorkingCopy FromFile(string path)
         {
             try
@@ -27,6 +49,11 @@ namespace InoSoft.Tools.Sqlver
             }
         }
 
+        /// <summary>
+        /// Saves working copy to an XML file.
+        /// </summary>
+        /// <param name="path">Path to the XML file.</param>
+        /// <returns>Value, indicating save success.</returns>
         public bool Save(string path)
         {
             try
@@ -41,30 +68,40 @@ namespace InoSoft.Tools.Sqlver
             }
         }
 
+        /// <summary>
+        /// Updates working copy.
+        /// </summary>
+        /// <param name="version">
+        /// Version within repository to which we want to update.
+        /// Minus one stands for the latest.
+        /// </param>
+        /// <param name="commandTimeout">Command timeout in seconds.</param>
+        /// <returns>True if successful.</returns>
         public bool Update(int version = -1, int commandTimeout = 30)
         {
+            Repository repository = Repository.FromFile(RepositoryPath);
+            if (repository == null)
+                return false;
+
+            Console.WriteLine("Repository opened successfully.");
+            if (version == -1)
+            {
+                version = repository.Versions.Count - 1;
+            }
+            if (version == CurrentVersion)
+            {
+                Console.WriteLine("Already up-to-date!");
+                return true;
+            }
+            if (version < 0 || version < CurrentVersion || version >= repository.Versions.Count)
+            {
+                Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!",
+                    version, CurrentVersion, repository.Versions.Count - 1);
+                return false;
+            }
+
             using (var context = new SqlContext(ConnectionString, commandTimeout, true))
             {
-                Repository repository = Repository.FromFile(RepositoryPath);
-                if (repository == null)
-                    return false;
-
-                Console.WriteLine("Repository opened successfully.");
-                if (version == -1)
-                {
-                    version = repository.LastVersion;
-                }
-                if (version == CurrentVersion)
-                {
-                    Console.WriteLine("Already up-to-date!");
-                    return true;
-                }
-                if (version < 0 || version < CurrentVersion || version > repository.LastVersion)
-                {
-                    Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!",
-                        version, CurrentVersion, repository.LastVersion);
-                    return false;
-                }
                 for (int index = CurrentVersion + 1; index <= version; ++index)
                 {
                     try
@@ -88,7 +125,7 @@ namespace InoSoft.Tools.Sqlver
         private void Increment(string versionSql, SqlContext context)
         {
             var queries = new List<string>();
-            using (var file = File.OpenText(Path.Combine(Path.GetDirectoryName(RepositoryPath), versionSql)))
+            using (var file = new StreamReader(Path.Combine(Path.GetDirectoryName(RepositoryPath), versionSql), Unicode ? Encoding.Unicode : Encoding.Default))
             {
                 var sb = new StringBuilder();
                 for (var line = file.ReadLine(); line != null; line = file.ReadLine())

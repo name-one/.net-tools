@@ -56,9 +56,9 @@ namespace InoSoft.Tools.Data
         public SqlContext(string connectionString, int commandTimeout, bool createDatabase)
         {
             _connectionString = connectionString;
-            CreateConnection();
             _commandTimeout = commandTimeout;
             _createDatabase = createDatabase;
+            CreateConnection();
             Start();
         }
 

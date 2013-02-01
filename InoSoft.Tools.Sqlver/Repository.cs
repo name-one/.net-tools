@@ -3,18 +3,26 @@ using System.Collections.Generic;
 
 namespace InoSoft.Tools.Sqlver
 {
+    /// <summary>
+    /// Serializable repository, which is collection of versions.
+    /// </summary>
     public class Repository
     {
-        public int LastVersion { get; set; }
-
-        public List<string> Versions { get; set; }
-
+        /// <summary>
+        /// Creates an instance of <see cref="Repository"/>.
+        /// </summary>
         public Repository()
         {
-            LastVersion = -1;
             Versions = new List<string>();
         }
 
+        public List<string> Versions { get; set; }
+
+        /// <summary>
+        /// Loads repository from XML file.
+        /// </summary>
+        /// <param name="path">Path to XML file.</param>
+        /// <returns>Loaded repository or null depending on operation success.</returns>
         public static Repository FromFile(string path)
         {
             try
@@ -28,12 +36,20 @@ namespace InoSoft.Tools.Sqlver
             }
         }
 
+        /// <summary>
+        /// Adds version to the repository.
+        /// </summary>
+        /// <param name="scriptPath">Path to SQL script, which is delta to the next version.</param>
         public void AddVersion(string scriptPath)
         {
             Versions.Add(scriptPath);
-            LastVersion = Versions.Count - 1;
         }
 
+        /// <summary>
+        /// Saves repository to an XML file.
+        /// </summary>
+        /// <param name="path">Path to the XML file.</param>
+        /// <returns>Value, indicating save success.</returns>
         public bool Save(string path)
         {
             try
