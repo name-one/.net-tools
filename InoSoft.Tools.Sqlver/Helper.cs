@@ -94,14 +94,14 @@ namespace InoSoft.Tools.Sqlver
             WorkingCopy workingCopy = WorkingCopy.FromFile(copy);
             if (workingCopy != null)
             {
-                if (!workingCopy.Update(version, commandTimeout))
+                bool success = workingCopy.Update(version, commandTimeout);
+                if (!success)
                 {
                     Console.WriteLine("Update failed!!!");
-                    return false;
                 }
                 if (workingCopy.Save(copy))
                 {
-                    return true;
+                    return success;
                 }
                 Console.WriteLine("Working copy save failed!!!");
                 return false;
