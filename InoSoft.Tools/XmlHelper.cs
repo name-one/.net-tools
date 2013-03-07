@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Xml.Serialization;
 using System.Net;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace InoSoft.Tools
 {
@@ -56,23 +57,45 @@ namespace InoSoft.Tools
                 return FromXml<T>(file);
             }
         }
-		
-		/// <summary>
+
+        /// <summary>
         /// Deserializes an object from an XML, which is requested from specified URI via HTTP.
         /// </summary>
         /// <typeparam name="T">Type of the object to deserialize.</typeparam>
         /// <param name="uri">URI of the HTTP request.</param>
-		public static T FromXml<T>(Uri uri)
+        public static T FromXml<T>(Uri uri)
             where T : class
         {
             if (uri == null)
                 throw new ArgumentNullException("uri");
-			
-			var request = WebRequest.Create(uri);
-			using (var response = request.GetResponse())
-			{
-				return FromXml<T>(response.GetResponseStream());				
-			}
+
+            var request = WebRequest.Create(uri);
+            using (var response = request.GetResponse())
+            {
+                return FromXml<T>(response.GetResponseStream());
+            }
+        }
+
+        /// <summary>
+        /// Sets the specified value to the XML nodes that correspond to the specified XPath.
+        /// </summary>
+        /// <param name="document">XML document to modify.</param>
+        /// <param name="xpath">XPath of the elements to set value to.</param>
+        /// <param name="value">Value to set.</param>
+        /// <returns>
+        /// The number of the affected XML nodes.
+        /// </returns>
+        public static int SetValue(XmlDocument document, string xpath, string value)
+        {
+            var nodes = document.SelectNodes(xpath);
+            if (nodes == null) return 0;
+            int count = 0;
+            foreach (XmlNode node in nodes)
+            {
+                node.Value = value;
+                count++;
+            }
+            return count;
         }
 
         /// <summary>
