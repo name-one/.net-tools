@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -15,7 +14,7 @@ namespace InoSoft.Tools.Data
     /// <remarks>
     /// Works synchronously, but in a separate thread. Only one thread and one execution queue a created,
     /// so single context can operate only single SQL query at the same time. For simultaneous access
-    /// miltiple contexts must be used. Note that some versions of MSSQL can't operate queries in parallel.
+    /// multiple contexts must be used. Note that some versions of MSSQL cannot operate queries in parallel.
     /// In this case using single context for the whole application is recommended.
     /// </remarks>
     public class SqlContext : AsyncProcessor<SqlBatch>, ISqlContext, IDisposable
@@ -134,6 +133,7 @@ namespace InoSoft.Tools.Data
         /// </summary>
         public virtual void Dispose()
         {
+            Stop();
             _sqlConnection.Dispose();
         }
 

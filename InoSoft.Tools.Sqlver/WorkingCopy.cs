@@ -8,9 +8,9 @@ namespace InoSoft.Tools.Sqlver
 {
     public class WorkingCopy
     {
-        public int CurrentVersion { get; set; }
-
         public string ConnectionString { get; set; }
+
+        public int CurrentVersion { get; set; }
 
         public string RepositoryPath { get; set; }
 
@@ -43,28 +43,28 @@ namespace InoSoft.Tools.Sqlver
 
         public bool Update(int version = -1, int commandTimeout = 30)
         {
-            var context = new SqlContext(ConnectionString, commandTimeout, true);
-            Repository repository = Repository.FromFile(RepositoryPath);
-            if (repository == null)
-                return false;
+            using (var context = new SqlContext(ConnectionString, commandTimeout, true))
+            {
+                Repository repository = Repository.FromFile(RepositoryPath);
+                if (repository == null)
+                    return false;
 
-            Console.WriteLine("Repository opened successfully.");
-            if (version == -1)
-            {
-                version = repository.LastVersion;
-            }
-            if (version == CurrentVersion)
-            {
-                Console.WriteLine("Already up-to-date!");
-            }
-            else if (version < 0 || version < CurrentVersion || version > repository.LastVersion)
-            {
-                Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!",
-                    version, CurrentVersion, repository.LastVersion);
-                return false;
-            }
-            else
-            {
+                Console.WriteLine("Repository opened successfully.");
+                if (version == -1)
+                {
+                    version = repository.LastVersion;
+                }
+                if (version == CurrentVersion)
+                {
+                    Console.WriteLine("Already up-to-date!");
+                    return true;
+                }
+                if (version < 0 || version < CurrentVersion || version > repository.LastVersion)
+                {
+                    Console.WriteLine("Version {0} is incorrect, only from {1} to {2} are acceptable!!!",
+                        version, CurrentVersion, repository.LastVersion);
+                    return false;
+                }
                 for (int index = CurrentVersion + 1; index <= version; ++index)
                 {
                     try
@@ -80,9 +80,9 @@ namespace InoSoft.Tools.Sqlver
                         return false;
                     }
                 }
-            }
 
-            return true;
+                return true;
+            }
         }
 
         private void Increment(string versionSql, SqlContext context)
@@ -91,9 +91,8 @@ namespace InoSoft.Tools.Sqlver
             using (var file = File.OpenText(Path.Combine(Path.GetDirectoryName(RepositoryPath), versionSql)))
             {
                 var sb = new StringBuilder();
-                while (!file.EndOfStream)
+                for (var line = file.ReadLine(); line != null; line = file.ReadLine())
                 {
-                    var line = file.ReadLine();
                     if (line.Trim().ToUpper() != "GO")
                     {
                         sb.AppendLine(line);
@@ -109,7 +108,7 @@ namespace InoSoft.Tools.Sqlver
 
             foreach (var query in queries)
             {
-                if (query.Trim() == "")
+                if (query.Trim() == String.Empty)
                     continue;
 
                 try

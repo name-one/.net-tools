@@ -42,7 +42,7 @@ namespace InoSoft.Tools.Sqlver
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(copy));
                 }
-                if (new WorkingCopy()
+                if (new WorkingCopy
                 {
                     CurrentVersion = -1,
                     RepositoryPath = repo,
@@ -50,7 +50,7 @@ namespace InoSoft.Tools.Sqlver
                 }.Save(copy))
                 {
                     return true;
-                } 
+                }
             }
             catch
             {
