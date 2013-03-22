@@ -104,6 +104,24 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
+        /// Gets all the methods of the specified interface, including methods inherited from
+        /// base interfaces.
+        /// </summary>
+        /// <param name="type">Interface type to get methods of.</param>
+        /// <returns>
+        /// All the methods of the specified interface.
+        /// </returns>
+        public static MethodInfo[] GetInterfaceMethods(this Type type)
+        {
+            if (!type.IsInterface)
+                throw new ArgumentException("The type must be an interface.", "type");
+
+            return type.GetMethods()
+                .Concat(type.GetInterfaces().SelectMany(GetInterfaceMethods))
+                .ToArray();
+        }
+
+        /// <summary>
         /// Compares property values of two objects and sets values from source to destination if they differ.
         /// </summary>
         /// <param name="dest">Destination object.</param>
