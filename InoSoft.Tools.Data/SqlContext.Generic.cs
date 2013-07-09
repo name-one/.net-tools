@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -153,7 +154,13 @@ namespace InoSoft.Tools.Data
             {
                 sqlParamsString.Length--;
             }
-            invokeParamsCode.Add(new CodeSnippetExpression(String.Format("\"EXEC {0} {1}\"", method.Name, sqlParamsString)));
+
+            var funcAttribs = method.GetCustomAttributes(typeof(FunctionAttribute), true);
+            var sqlQueryText = funcAttribs.Length == 0 
+                ? String.Format("EXEC {0} {1}", method.Name, sqlParamsString)
+                : ((FunctionAttribute)funcAttribs[0]).GetQuery(method.Name, sqlParamsString.ToString());
+
+            invokeParamsCode.Add(new CodeSnippetExpression(String.Format(@"""{0}""", sqlQueryText)));
 
             // Actual parameters, tranferred via SqlParameters.
             foreach (ParameterInfo parameter in method.GetParameters())
