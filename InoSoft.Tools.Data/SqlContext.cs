@@ -336,7 +336,7 @@ namespace InoSoft.Tools.Data
             {
                 connection.Open();
                 var command = connection.CreateCommand();
-                command.CommandText = "CREATE DATABASE " + dbName;
+                command.CommandText = String.Format("CREATE DATABASE [{0}]", dbName);
                 command.CommandTimeout = _commandTimeout;
                 command.ExecuteNonQuery();
             }

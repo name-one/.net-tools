@@ -11,15 +11,15 @@ namespace InoSoft.Tools.Sqlver
 
         public Repository()
         {
-            this.LastVersion = -1;
-            this.Versions = new List<string>();
+            LastVersion = -1;
+            Versions = new List<string>();
         }
 
         public static Repository FromFile(string path)
         {
             try
             {
-                return XmlHelper.LoadObjectFromFile<Repository>(path);
+                return XmlHelper.FromXml<Repository>(path);
             }
             catch (Exception ex)
             {
@@ -30,7 +30,7 @@ namespace InoSoft.Tools.Sqlver
 
         public void AddVersion(string scriptPath)
         {
-            this.Versions.Add(scriptPath);
+            Versions.Add(scriptPath);
             LastVersion = Versions.Count - 1;
         }
 
@@ -38,7 +38,7 @@ namespace InoSoft.Tools.Sqlver
         {
             try
             {
-                XmlHelper.SaveObjectToFile<Repository>(this, path);
+                XmlHelper.ToXml(this, path);
                 return true;
             }
             catch (Exception ex)
