@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace InoSoft.Tools
 {
@@ -63,6 +64,14 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
+        /// Performs user-defined actions when an unhandled exception occurs in the <see cref="RunIteration"/> method.
+        /// </summary>
+        /// <param name="ex">Exception that was not handled during the iteration execution.</param>
+        protected virtual void OnRunIterationException(Exception ex)
+        {
+        }
+
+        /// <summary>
         /// Performs the work required every iteration.
         /// </summary>
         protected abstract void RunIteration();
@@ -78,7 +87,14 @@ namespace InoSoft.Tools
             {
                 waiter.Start();
 
-                RunIteration();
+                try
+                {
+                    RunIteration();
+                }
+                catch (Exception ex)
+                {
+                    OnRunIterationException(ex);
+                }
 
                 waiter.Wait();
             }
