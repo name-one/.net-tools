@@ -25,6 +25,7 @@ namespace InoSoft.Tools.Data
             typeof(byte),
             typeof(byte[]),
             typeof(decimal),
+            typeof(double),
             typeof(float),
             typeof(int),
             typeof(long),
