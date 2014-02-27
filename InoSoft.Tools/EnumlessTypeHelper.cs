@@ -44,8 +44,8 @@ namespace InoSoft.Tools
                 {
                     Name = propertyInfo.Name,
                     Type = typeReference,
-                    HasGet = true,
-                    HasSet = true,
+                    HasGet = propertyInfo.CanRead,
+                    HasSet = propertyInfo.CanWrite,
                     Attributes = MemberAttributes.Public
                 };
                 // Implement property getter and setter.

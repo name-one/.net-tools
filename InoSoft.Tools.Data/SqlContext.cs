@@ -267,27 +267,36 @@ namespace InoSoft.Tools.Data
         {
             var result = new List<object>();
 
-            // Build list of property-infos, which match result set column names.
-            var properties = new List<PropertyInfo>();
+            // Get properties that match column names in the result set.
+            var properties = new ResultProperty[reader.VisibleFieldCount];
             for (int i = 0; i < reader.VisibleFieldCount; i++)
             {
-                var prop = elementType.GetProperty(reader.GetName(i));
-                properties.Add(prop);
+                properties[i] = ResultProperty.Get(elementType.GetProperty(reader.GetName(i)));
             }
 
             // Fill result list with items.
             while (reader.Read())
             {
                 // Create object of desired type and set its properties.
-                var resultItem = Activator.CreateInstance(elementType);
-                for (int i = 0; i < properties.Count; i++)
+                object resultItem = Activator.CreateInstance(elementType);
+                for (int i = 0; i < properties.Length; i++)
                 {
-                    // Property info may be null if there is column, which has no property to match.
-                    if (properties[i] != null)
-                    {
-                        var sqlValue = reader.GetValue(i);
-                        properties[i].SetValue(resultItem, sqlValue == DBNull.Value ? null : sqlValue, null);
-                    }
+                    ResultProperty property = properties[i];
+
+                    // Property may be null if the column has no matching property.
+                    if (property == null) continue;
+
+                    object value = reader.GetValue(i);
+
+                    // Convert the value to the target type.
+                    Type type = property.UnderlyingType;
+                    value = value != DBNull.Value
+                        ? type.IsEnum
+                            ? Enum.ToObject(type, value)
+                            : Convert.ChangeType(value, type)
+                        : null;
+
+                    property.Info.SetValue(resultItem, value, null);
                 }
                 result.Add(resultItem);
             }
@@ -368,6 +377,23 @@ namespace InoSoft.Tools.Data
                     }
                 }
                 Thread.Sleep(_createDatabaseRetryInterval);
+            }
+        }
+
+        private class ResultProperty
+        {
+            public readonly PropertyInfo Info;
+            public readonly Type UnderlyingType;
+
+            private ResultProperty(PropertyInfo propertyInfo)
+            {
+                Info = propertyInfo;
+                UnderlyingType = Nullable.GetUnderlyingType(Info.PropertyType) ?? Info.PropertyType;
+            }
+
+            public static ResultProperty Get(PropertyInfo propertyInfo)
+            {
+                return propertyInfo != null ? new ResultProperty(propertyInfo) : null;
             }
         }
     }

@@ -2,7 +2,6 @@
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -119,8 +118,7 @@ namespace InoSoft.Tools.Data
             }
         }
 
-        private static void AddProxyClassMethod(MethodInfo method,
-            Dictionary<Type, CodeTypeDeclaration> customModels, CodeTypeDeclaration classCode)
+        private static void AddProxyClassMethod(MethodInfo method, CodeTypeDeclaration classCode)
         {
             // Determine type of elements to return and appropriate array type (e.g. String and String[]).
             Type elementType = method.ReturnType.IsArray ? method.ReturnType.GetElementType() : method.ReturnType;
@@ -156,7 +154,7 @@ namespace InoSoft.Tools.Data
             }
 
             var funcAttribs = method.GetCustomAttributes(typeof(FunctionAttribute), true);
-            var sqlQueryText = funcAttribs.Length == 0 
+            var sqlQueryText = funcAttribs.Length == 0
                 ? String.Format("EXEC {0} {1}", method.Name, sqlParamsString)
                 : ((FunctionAttribute)funcAttribs[0]).GetQuery(method.Name, sqlParamsString.ToString());
 
@@ -200,37 +198,11 @@ namespace InoSoft.Tools.Data
                 }
             }
 
-            // Check if element type contains Enum properties.
-            bool cloneNeeded = false;
-            CodeTypeDeclaration customModel;
-            if (customModels.TryGetValue(elementType, out customModel))
-            {
-                cloneNeeded = true;
-            }
-            else if (elementType.IsClass)
-            {
-                if (elementType.ContainsEnums())
-                {
-                    customModel = EnumlessTypeHelper.GetEnumlessClassCode(elementType);
-                    customModels.Add(elementType, customModel);
-                    cloneNeeded = true;
-                }
-            }
-            var modelTypeRef = cloneNeeded ? new CodeTypeReference(customModel.Name) : new CodeTypeReference(elementType);
-
             // Invoke SQL query.
             var invokeCode = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
                 new CodeSnippetExpression("Context"), "Execute",
-                elementType == typeof(void) ? new CodeTypeReference[0] : new[] { modelTypeRef }),
+                elementType == typeof(void) ? new CodeTypeReference[0] : new[] { new CodeTypeReference(elementType) }),
                 invokeParamsCode.ToArray());
-
-            // Clone result if needed.
-            if (cloneNeeded)
-            {
-                invokeCode = new CodeMethodInvokeExpression(new CodeMethodReferenceExpression(
-                    new CodeTypeReferenceExpression(typeof(ReflectionHelper)), "CloneArray",
-                    new[] { modelTypeRef, new CodeTypeReference(elementType) }), invokeCode);
-            }
 
             if (method.ReturnType == typeof(void))
             {
@@ -295,19 +267,10 @@ namespace InoSoft.Tools.Data
             // Add SqlContext field to access wrapped context for executing procedures.
             classCode.Members.Add(new CodeMemberField(typeof(ISqlContext), "Context") { Attributes = MemberAttributes.Public });
 
-            // Create custom model classes for those models that have Enum properties.
-            var customModelsCode = new Dictionary<Type, CodeTypeDeclaration>();
-
             // Implement procedure definitions interface.
             foreach (MethodInfo method in proceduresInterfaceType.GetInterfaceMethods())
             {
-                AddProxyClassMethod(method, customModelsCode, classCode);
-            }
-
-            // Add custom model definitions to the class.
-            foreach (CodeTypeDeclaration type in customModelsCode.Values)
-            {
-                classCode.Members.Add(type);
+                AddProxyClassMethod(method, classCode);
             }
 
             return classCode;
