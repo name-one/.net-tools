@@ -91,7 +91,13 @@ namespace InoSoft.Tools.Data
         private static void AddOutParameter(ParameterInfo parameter, StringBuilder sqlParamsString,
             CodeStatementCollection statements)
         {
-            bool isStringParam = parameter.ParameterType.GetElementType() == typeof(string);
+            Type elementType = parameter.ParameterType.GetElementType();
+            Type underlyingType = Nullable.GetUnderlyingType(elementType);
+            bool isNullable = underlyingType != null;
+            if (isNullable)
+            {
+                elementType = underlyingType;
+            }
 
             sqlParamsString.AppendFormat("@{0} output,", parameter.Name);
             string sqlParamVar = String.Format("{0}SqlParameter", parameter.Name);
@@ -101,16 +107,19 @@ namespace InoSoft.Tools.Data
             statements.Add(new CodeAssignStatement(
                 new CodeSnippetExpression(String.Format("{0}.ParameterName", sqlParamVar)),
                 new CodeSnippetExpression(String.Format("\"{0}\"", parameter.Name))));
-            CodeExpression valueExpression = isStringParam
-                ? (CodeExpression)new CodeSnippetExpression("DBNull.Value")
-                : new CodeDefaultValueExpression(new CodeTypeReference(parameter.ParameterType.GetElementType()));
+            CodeExpression valueExpression = elementType.IsValueType
+                ? new CodeDefaultValueExpression(new CodeTypeReference(elementType))
+                : (CodeExpression)new CodeSnippetExpression("DBNull.Value");
             statements.Add(new CodeAssignStatement(
                 new CodeSnippetExpression(String.Format("{0}.Value", sqlParamVar)),
                 valueExpression));
             statements.Add(new CodeAssignStatement(
+                new CodeSnippetExpression(String.Format("{0}.IsNullable", sqlParamVar)),
+                new CodeSnippetExpression(isNullable || !elementType.IsValueType ? "true" : "false")));
+            statements.Add(new CodeAssignStatement(
                 new CodeSnippetExpression(String.Format("{0}.Direction", sqlParamVar)),
                 new CodeSnippetExpression("System.Data.ParameterDirection.Output")));
-            if (isStringParam)
+            if (elementType == typeof(string))
             {
                 statements.Add(new CodeAssignStatement(
                     new CodeSnippetExpression(String.Format("{0}.Size", sqlParamVar)),
@@ -223,7 +232,7 @@ namespace InoSoft.Tools.Data
                     methodCode.Statements.Add(new CodeAssignStatement(
                         new CodeSnippetExpression(parameter.Name),
                         new CodeCastExpression(parameter.ParameterType.GetElementType(),
-                            new CodeSnippetExpression(String.Format("{0}SqlParameter.Value", parameter.Name)))));
+                            new CodeSnippetExpression(String.Format("{0}SqlParameter.Value != DBNull.Value ? {0}SqlParameter.Value : null", parameter.Name)))));
                 }
             }
 
