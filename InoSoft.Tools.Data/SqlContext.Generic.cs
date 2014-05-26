@@ -3,7 +3,6 @@ using System.CodeDom;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Reflection;
-using System.Text;
 
 namespace InoSoft.Tools.Data
 {
@@ -37,15 +36,16 @@ namespace InoSoft.Tools.Data
             }
 
             // Create a namespace for the code being generated, add usings.
-            var codeNamespace = new CodeNamespace("InoSoft.Tools.Data");
+            var codeNamespace = new CodeNamespace(proceduresInterfaceType.Namespace);
             codeNamespace.Imports.Add(new CodeNamespaceImport("System"));
             codeNamespace.Imports.Add(new CodeNamespaceImport("System.Collections"));
             codeNamespace.Imports.Add(new CodeNamespaceImport("System.Collections.Generic"));
             codeNamespace.Imports.Add(new CodeNamespaceImport("System.Linq"));
 
             // Generate proxy class code and add it to the namespace.
-            _proxyTypeName = "ProceduresProxy";
-            CodeTypeDeclaration proxyClassCode = GetProxyClassCode(proceduresInterfaceType, _proxyTypeName);
+            string proxyTypeName = proceduresInterfaceType.FullName.Replace('.', '_') + "_ProceduresProxy";
+            _proxyTypeName = proceduresInterfaceType.Namespace + "." + proxyTypeName;
+            CodeTypeDeclaration proxyClassCode = GetProxyClassCode(proceduresInterfaceType, proxyTypeName);
             codeNamespace.Types.Add(proxyClassCode);
 
             // Add assembly references.
@@ -61,7 +61,7 @@ namespace InoSoft.Tools.Data
             _compiledAssembly = AssemblyCreator.Create(codeNamespace, assemblies);
 
             // Create procedures proxy.
-            object procedures = _compiledAssembly.CreateInstance("InoSoft.Tools.Data." + _proxyTypeName);
+            object procedures = _compiledAssembly.CreateInstance(_proxyTypeName);
             if (procedures == null)
                 throw new Exception("Failed to create a proxy.");
             Procedures = (TProcedures)procedures;
@@ -80,7 +80,7 @@ namespace InoSoft.Tools.Data
         public BatchContext<TProcedures> CreateBatch()
         {
             // Create procedures proxy
-            var batchProxy = _compiledAssembly.CreateInstance("InoSoft.Tools.Data." + _proxyTypeName);
+            var batchProxy = _compiledAssembly.CreateInstance(_proxyTypeName);
             if (batchProxy == null)
                 throw new Exception("Failed to create a proxy.");
             var batchContext = new BatchContext<TProcedures>(this, (TProcedures)batchProxy);
@@ -88,8 +88,7 @@ namespace InoSoft.Tools.Data
             return batchContext;
         }
 
-        private static void AddOutParameter(ParameterInfo parameter, StringBuilder sqlParamsString,
-            CodeStatementCollection statements)
+        private static string AddOutParameter(ParameterInfo parameter, CodeStatementCollection statements)
         {
             Type elementType = parameter.ParameterType.GetElementType();
             Type underlyingType = Nullable.GetUnderlyingType(elementType);
@@ -99,7 +98,6 @@ namespace InoSoft.Tools.Data
                 elementType = underlyingType;
             }
 
-            sqlParamsString.AppendFormat("@{0} output,", parameter.Name);
             string sqlParamVar = String.Format("{0}SqlParameter", parameter.Name);
             statements.Add(new CodeVariableDeclarationStatement(
                 typeof(SqlParameter), sqlParamVar,
@@ -125,6 +123,8 @@ namespace InoSoft.Tools.Data
                     new CodeSnippetExpression(String.Format("{0}.Size", sqlParamVar)),
                     new CodeSnippetExpression("Int32.MaxValue")));
             }
+
+            return String.Format("@{0} output", parameter.Name);
         }
 
         private static void AddProxyClassMethod(MethodInfo method, CodeTypeDeclaration classCode)
@@ -138,6 +138,9 @@ namespace InoSoft.Tools.Data
             {
                 Name = method.Name,
                 Attributes = MemberAttributes.Public,
+                PrivateImplementationType = method.DeclaringType != null
+                    ? new CodeTypeReference(method.DeclaringType)
+                    : null,
                 ReturnType = new CodeTypeReference(method.ReturnType)
             };
 
@@ -145,27 +148,20 @@ namespace InoSoft.Tools.Data
             var invokeParamsCode = new List<CodeExpression>();
 
             // SQL code for executing procedure with name.
-            var sqlParamsString = new StringBuilder();
+            var sqlParams = new List<string>();
             foreach (ParameterInfo parameter in method.GetParameters())
             {
-                if (parameter.IsOut)
-                {
-                    AddOutParameter(parameter, sqlParamsString, methodCode.Statements);
-                }
-                else
-                {
-                    sqlParamsString.AppendFormat("@{0},", parameter.Name);
-                }
-            }
-            if (sqlParamsString.Length > 0)
-            {
-                sqlParamsString.Length--;
+                sqlParams.Add(parameter.IsOut
+                    ? AddOutParameter(parameter, methodCode.Statements)
+                    : String.Format("@{0}", parameter.Name));
             }
 
             var funcAttribs = method.GetCustomAttributes(typeof(FunctionAttribute), true);
             var sqlQueryText = funcAttribs.Length == 0
-                ? String.Format("EXEC {0} {1}", method.Name, sqlParamsString)
-                : ((FunctionAttribute)funcAttribs[0]).GetQuery(method.Name, sqlParamsString.ToString());
+                ? String.Format("EXEC [{0}].[{1}] {2}",
+                    GetSchemaName(method) ?? GetSchemaName(method.DeclaringType) ?? "dbo",
+                    method.Name, String.Join(", ", sqlParams))
+                : ((FunctionAttribute)funcAttribs[0]).GetQuery(method.Name, String.Join(", ", sqlParams));
 
             invokeParamsCode.Add(new CodeSnippetExpression(String.Format(@"""{0}""", sqlQueryText)));
 
@@ -283,6 +279,12 @@ namespace InoSoft.Tools.Data
             }
 
             return classCode;
+        }
+
+        private static string GetSchemaName(MemberInfo memberInfo)
+        {
+            object[] attributes = memberInfo.GetCustomAttributes(typeof(SchemaAttribute), true);
+            return attributes.Length > 0 ? ((SchemaAttribute)attributes[0]).Name : null;
         }
     }
 }

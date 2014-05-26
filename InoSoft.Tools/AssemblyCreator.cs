@@ -42,6 +42,7 @@ namespace InoSoft.Tools
                 codeProvider.GenerateCodeFromNamespace(codeNamespace, writer, null);
             }
             var compileResult = codeProvider.CompileAssemblyFromFile(compilerParameters, sourcePath);
+            File.Delete(sourcePath);
 #else
             var compileResult = codeProvider.CompileAssemblyFromDom(compilerParameters, compileUnit);
 #endif

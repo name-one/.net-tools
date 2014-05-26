@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace InoSoft.Tools.Data
-{ 
+{
     [AttributeUsage(AttributeTargets.Method)]
     public class FunctionAttribute : Attribute
     {
@@ -27,7 +27,7 @@ namespace InoSoft.Tools.Data
         internal string GetQuery(string functionName, string paramsString)
         {
             return String.Format(
-                _isTableValued ? "SELECT * FROM {0}.{1}({2})" : "SELECT {0}.{1}({2})",
+                _isTableValued ? "SELECT * FROM [{0}].[{1}]({2})" : "SELECT [{0}].[{1}]({2})",
                 _schema,
                 functionName,
                 paramsString);
