@@ -117,7 +117,7 @@ namespace InoSoft.Tools
                 throw new ArgumentException("The type must be an interface.", "type");
 
             return type.GetMethods()
-                .Concat(type.GetInterfaces().SelectMany(GetInterfaceMethods))
+                .Union(type.GetInterfaces().SelectMany(GetInterfaceMethods))
                 .ToArray();
         }
 
