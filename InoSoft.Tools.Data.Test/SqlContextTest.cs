@@ -1,172 +1,64 @@
-﻿using NUnit.Framework;
-using System;
+﻿using System;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using NUnit.Framework;
 
 namespace InoSoft.Tools.Data.Test
 {
     [TestFixture]
     public class SqlContextTest
     {
-        [Test]
-        public void GetHumans()
+        #region Configuration
+
+        private const string DbName = "InoSoft.Tools.Data.Test";
+        private const string DbServer = ".";
+
+        private static SqlContext<IProceduresProxy> CreateSqlContext()
         {
-            var context = CreateSqlContext();
-
-            Human[] testHumans = new Human[]
-            {
-                new Human{Id = 1, FirstName = "Josef", LastName = "Kobzon"},
-                new Human{Id = 2, FirstName = "Sofia", LastName = "Rotaru"},
-                new Human{Id = 3, FirstName = "Larisa", LastName = "Dolina"}
-            };
-
-            context.Execute("TRUNCATE TABLE Human");
-            foreach (var item in testHumans)
-            {
-                InsertIntoHuman(context, item);
-            }
-
-            var resultHumans = context.Procedures.GetHumans();
-            Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
+            return new SqlContext<IProceduresProxy>(GetConnectionString(DbName));
         }
 
-        [Test]
-        public void GetHumanById()
+        private static string GetConnectionString(string catalog)
         {
-            var context = CreateSqlContext();
-
-            context.Execute("DELETE Human WHERE Id = 100 OR Id = 101");
-            Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
-            InsertIntoHuman(context, testHuman);
-
-            Human resultHuman = context.Procedures.GetHumanById(100);
-            Assert.IsTrue(testHuman.MemberwiseEquals(resultHuman));
-
-            resultHuman = context.Procedures.GetHumanById(101);
-            Assert.IsNull(resultHuman);
+            return String.Format("data source={0};initial catalog={1};integrated security=true", DbServer, catalog);
         }
 
-        [Test]
-        public void Nulls()
+        #endregion Configuration
+
+        #region Set up / tear down
+
+        [TestFixtureSetUp]
+        public void SetUp()
         {
-            var context = CreateSqlContext();
-
-            Human[] testHumans = new Human[]
+            string[] commands = ResourceHelper.ReadText("Database.sql")
+                .Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries);
+            using (var context = new SqlContext(GetConnectionString(DbName), true))
             {
-                new Human{Id = null, FirstName = "Josef", LastName = "Kobzon"},
-                new Human{Id = 2, FirstName = null, LastName = "Rotaru"},
-                new Human{Id = 3, FirstName = "Larisa", LastName = null}
-            };
-            context.Execute("TRUNCATE TABLE Human");
-            foreach (var item in testHumans)
-            {
-                context.Procedures.AddHuman(item.Id, item.FirstName, item.LastName);
-            }
-
-            var resultHumans = context.Execute<Human>("SELECT * FROM Human");
-
-            Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
-        }
-
-        [Test]
-        public void StringOutputs()
-        {
-            var context = CreateSqlContext();
-
-            Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
-            context.Execute("TRUNCATE TABLE Human");
-            InsertIntoHuman(context, testHuman);
-
-            string firstName, lastName;
-            context.Procedures.GetHumanViaOutput(100, out firstName, out lastName);
-            Assert.AreEqual(firstName, testHuman.FirstName);
-            Assert.AreEqual(lastName, testHuman.LastName);
-        }
-
-        [Test]
-        public void VariousOutputs()
-        {
-            var context = CreateSqlContext();
-
-            Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
-            context.Execute("TRUNCATE TABLE Human");
-            InsertIntoHuman(context, testHuman);
-
-            long id;
-            string firstName, lastName;
-            context.Procedures.GetRandomHumanViaOutput(out id, out firstName, out lastName);
-            Assert.AreEqual(id, testHuman.Id);
-            Assert.AreEqual(firstName, testHuman.FirstName);
-            Assert.AreEqual(lastName, testHuman.LastName);
-        }
-
-        [Test]
-        public void Enum()
-        {
-            var context = CreateSqlContext();
-
-            Human[] testHumans = new Human[]
-            {
-                new Human{Id = null, FirstName = "Josef", LastName = "Kobzon"},
-                new Human{Id = 2, FirstName = "Sofia", LastName = "Rotaru"},
-                new Human{Id = 3, FirstName = "Larisa", LastName = "Dolina"}
-            };
-            HumanId?[] testHumanIds = new HumanId?[]
-            {
-                null,
-                HumanId.Rotaru,
-                HumanId.Dolina
-            };
-            context.Execute("TRUNCATE TABLE Human");
-            foreach (var item in testHumans)
-            {
-                InsertIntoHuman(context, item);
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                var resultHuman = context.Procedures.GetHumanById(testHumanIds[i]);
-                Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
-                if (testHumanIds[i].HasValue)
+                foreach (string command in commands)
                 {
-                    resultHuman = context.Procedures.GetHumanById(testHumanIds[i].Value);
-                    Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
+                    context.Execute(command);
                 }
             }
         }
 
-        [Test]
-        public void ProcessText()
+        [TestFixtureTearDown]
+        public void TearDown()
         {
-            var context = CreateSqlContext();
-            var sb = new StringBuilder();
-            for (int i = 0; i < 100; i++)
+            SqlConnection.ClearAllPools();
+            using (var master = new SqlContext(GetConnectionString("master")))
             {
-                sb.Append("abcd");
+                DropDatabase(master, DbName);
+                DropDatabase(master, "nonexistent");
             }
-            var testText = sb.ToString();
-            var resultText = context.Procedures.ProcessText(testText);
-            Assert.AreEqual(testText, resultText);
         }
 
-        [Test]
-        public void CreateDatabase()
+        private static void DropDatabase(ISqlContext masterContext, string dbName)
         {
-            var master = new SqlContext("data source=.\\sqlexpress;initial catalog=master;integrated security=true");
-            try
-            {
-                master.Execute("DROP DATABASE nonexistent");
-            }
-            catch
-            { }
-
-            var nonexistent = new SqlContext("data source=.\\sqlexpress;initial catalog=nonexistent;integrated security=true", true);
-            int hundred = nonexistent.Execute<int>("SELECT 100").Single();
-            Assert.AreEqual(100, hundred);
+            masterContext.Execute(String.Format("IF db_id('{0}') IS NOT NULL DROP DATABASE [{0}]", dbName));
         }
 
-        private void InsertIntoHuman(SqlContext context, Human human)
+        private static void InsertHuman(ISqlContext context, Human human)
         {
             context.Execute("INSERT INTO Human VALUES(@id, @firstName, @lastName)",
                 new SqlParameter("id", human.Id.HasValue ? (object)human.Id.Value : DBNull.Value),
@@ -174,9 +66,175 @@ namespace InoSoft.Tools.Data.Test
                 new SqlParameter("lastName", human.LastName));
         }
 
-        private SqlContext<IProceduresProxy> CreateSqlContext()
+        #endregion Set up / tear down
+
+        [Test]
+        public void ConnectionOptions()
         {
-            return new SqlContext<IProceduresProxy>("data source=.\\sqlexpress;initial catalog=InoSoft.Tools.Data.Test;integrated security=true");
+            using (var context = CreateSqlContext())
+            {
+                bool arithabort = context.Execute<bool>("SELECT CAST(SESSIONPROPERTY('ARITHABORT') AS bit)").Single();
+                Assert.AreEqual(true, arithabort);
+            }
+        }
+
+        [Test]
+        public void CreateDatabase()
+        {
+            using (var nonexistent = new SqlContext(GetConnectionString("nonexistent"), true))
+            {
+                int hundred = nonexistent.Execute<int>("SELECT 100").Single();
+                Assert.AreEqual(100, hundred);
+            }
+        }
+
+        [Test]
+        public void Enum()
+        {
+            using (var context = CreateSqlContext())
+            {
+                Human[] testHumans =
+                {
+                    new Human { Id = null, FirstName = "Josef", LastName = "Kobzon" },
+                    new Human { Id = 2, FirstName = "Sofia", LastName = "Rotaru" },
+                    new Human { Id = 3, FirstName = "Larisa", LastName = "Dolina" },
+                };
+                HumanId?[] testHumanIds =
+                {
+                    null,
+                    HumanId.Rotaru,
+                    HumanId.Dolina
+                };
+                context.Execute("TRUNCATE TABLE Human");
+                foreach (var item in testHumans)
+                {
+                    InsertHuman(context, item);
+                }
+
+                for (int i = 0; i < 3; i++)
+                {
+                    var resultHuman = context.Procedures.GetHumanById(testHumanIds[i]);
+                    Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
+                    if (testHumanIds[i].HasValue)
+                    {
+                        resultHuman = context.Procedures.GetHumanById(testHumanIds[i].Value);
+                        Assert.IsTrue(testHumans[i].MemberwiseEquals(resultHuman));
+                    }
+                }
+            }
+        }
+
+        [Test]
+        public void GetHumanById()
+        {
+            using (var context = CreateSqlContext())
+            {
+                context.Execute("DELETE Human WHERE Id = 100 OR Id = 101");
+                Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
+                InsertHuman(context, testHuman);
+
+                Human resultHuman = context.Procedures.GetHumanById(100);
+                Assert.IsTrue(testHuman.MemberwiseEquals(resultHuman));
+
+                resultHuman = context.Procedures.GetHumanById(101);
+                Assert.IsNull(resultHuman);
+            }
+        }
+
+        [Test]
+        public void GetHumans()
+        {
+            using (var context = CreateSqlContext())
+            {
+                Human[] testHumans =
+                {
+                    new Human { Id = 1, FirstName = "Josef", LastName = "Kobzon" },
+                    new Human { Id = 2, FirstName = "Sofia", LastName = "Rotaru" },
+                    new Human { Id = 3, FirstName = "Larisa", LastName = "Dolina" }
+                };
+
+                context.Execute("TRUNCATE TABLE Human");
+                foreach (var item in testHumans)
+                {
+                    InsertHuman(context, item);
+                }
+
+                var resultHumans = context.Procedures.GetHumans();
+                Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
+            }
+        }
+
+        [Test]
+        public void Nulls()
+        {
+            using (var context = CreateSqlContext())
+            {
+                Human[] testHumans =
+                {
+                    new Human { Id = null, FirstName = "Josef", LastName = "Kobzon" },
+                    new Human { Id = 2, FirstName = null, LastName = "Rotaru" },
+                    new Human { Id = 3, FirstName = "Larisa", LastName = null }
+                };
+                context.Execute("TRUNCATE TABLE Human");
+                foreach (var item in testHumans)
+                {
+                    context.Procedures.AddHuman(item.Id, item.FirstName, item.LastName);
+                }
+
+                var resultHumans = context.Execute<Human>("SELECT * FROM Human");
+
+                Assert.IsTrue(testHumans.ElementwiseEquals(resultHumans));
+            }
+        }
+
+        [Test]
+        public void ProcessText()
+        {
+            using (var context = CreateSqlContext())
+            {
+                var sb = new StringBuilder();
+                for (int i = 0; i < 100; i++)
+                {
+                    sb.Append("abcd");
+                }
+                var testText = sb.ToString();
+                var resultText = context.Procedures.ProcessText(testText);
+                Assert.AreEqual(testText, resultText);
+            }
+        }
+
+        [Test]
+        public void StringOutputs()
+        {
+            using (var context = CreateSqlContext())
+            {
+                Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
+                context.Execute("TRUNCATE TABLE Human");
+                InsertHuman(context, testHuman);
+
+                string firstName, lastName;
+                context.Procedures.GetHumanViaOutput(100, out firstName, out lastName);
+                Assert.AreEqual(firstName, testHuman.FirstName);
+                Assert.AreEqual(lastName, testHuman.LastName);
+            }
+        }
+
+        [Test]
+        public void VariousOutputs()
+        {
+            using (var context = CreateSqlContext())
+            {
+                Human testHuman = new Human { Id = 100, FirstName = "Josef", LastName = "Kobzon" };
+                context.Execute("TRUNCATE TABLE Human");
+                InsertHuman(context, testHuman);
+
+                long id;
+                string firstName, lastName;
+                context.Procedures.GetRandomHumanViaOutput(out id, out firstName, out lastName);
+                Assert.AreEqual(id, testHuman.Id);
+                Assert.AreEqual(firstName, testHuman.FirstName);
+                Assert.AreEqual(lastName, testHuman.LastName);
+            }
         }
     }
 }

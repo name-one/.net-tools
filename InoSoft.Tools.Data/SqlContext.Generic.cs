@@ -156,14 +156,19 @@ namespace InoSoft.Tools.Data
                     : String.Format("@{0}", parameter.Name));
             }
 
-            var funcAttribs = method.GetCustomAttributes(typeof(FunctionAttribute), true);
-            var sqlQueryText = funcAttribs.Length == 0
-                ? String.Format("EXEC [{0}].[{1}] {2}",
-                    GetSchemaName(method) ?? GetSchemaName(method.DeclaringType) ?? "dbo",
-                    method.Name, String.Join(", ", sqlParams))
-                : ((FunctionAttribute)funcAttribs[0]).GetQuery(method.Name, String.Join(", ", sqlParams));
+            FunctionAttribute[] funcAttribs = method.GetAttributes<FunctionAttribute>();
+            SqlQueryType sqlQueryType = funcAttribs.Length == 0 ? SqlQueryType.Procedure : SqlQueryType.General;
+            var sqlQueryText = sqlQueryType == SqlQueryType.Procedure
+                ? String.Format("[{0}].[{1}]",
+                    GetSchemaName(method) ?? GetSchemaName(method.DeclaringType) ?? "dbo", method.Name)
+                : funcAttribs[0].GetQuery(method.Name, String.Join(", ", sqlParams));
 
+            // Specify SQL query.
             invokeParamsCode.Add(new CodeSnippetExpression(String.Format(@"""{0}""", sqlQueryText)));
+
+            // Specify SQL query type.
+            invokeParamsCode.Add(new CodeFieldReferenceExpression(new CodeTypeReferenceExpression(typeof(SqlQueryType)),
+                sqlQueryType.ToString()));
 
             // Actual parameters, tranferred via SqlParameters.
             foreach (ParameterInfo parameter in method.GetParameters())

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
@@ -146,13 +147,26 @@ namespace InoSoft.Tools.Data
         /// <param name="parameters">Optional named parameters.</param>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
+            return Execute(elementType, sql, SqlQueryType.General, parameters);
+        }
+
+        /// <summary>
+        /// Executes an SQL command that returns an array of elements.
+        /// </summary>
+        /// <param name="elementType">Type of the elements, or <c>null</c> if no query result is expected.</param>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="queryType">Query type.</param>
+        /// <param name="parameters">Optional named parameters.</param>
+        public Array Execute(Type elementType, string sql, SqlQueryType queryType, params object[] parameters)
+        {
             // Create an encapsulated query and push it into the queue.
             var query = new SqlQuery
             {
-                ElementType = elementType,
+                ElementType = elementType == null ? null : Nullable.GetUnderlyingType(elementType) ?? elementType,
+                QueryType = queryType,
                 Sql = sql,
                 Parameters = parameters,
-                Timeout = _commandTimeout
+                Timeout = _commandTimeout,
             };
             var batch = new SqlBatch { Queries = new[] { query } };
             EnqueueItem(batch);
@@ -180,13 +194,35 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
+        /// Executes SQL query, which returns nothing.
+        /// </summary>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="queryType">Query type.</param>
+        /// <param name="parameters">Optional named parameters.</param>
+        public void Execute(string sql, SqlQueryType queryType, params object[] parameters)
+        {
+            Execute(null, sql, queryType, parameters);
+        }
+
+        /// <summary>
         /// Executes SQL command, which returns array of elements.
         /// </summary>
         /// <param name="sql">SQL query string.</param>
         /// <param name="parameters">Optional named parameters.</param>
         public T[] Execute<T>(string sql, params object[] parameters)
         {
-            return Execute(typeof(T), sql, parameters).Cast<T>().ToArray();
+            return Execute<T>(sql, SqlQueryType.General, parameters);
+        }
+
+        /// <summary>
+        /// Executes SQL command, which returns array of elements.
+        /// </summary>
+        /// <param name="sql">SQL query string.</param>
+        /// <param name="queryType">Query type.</param>
+        /// <param name="parameters">Optional named parameters.</param>
+        public T[] Execute<T>(string sql, SqlQueryType queryType, params object[] parameters)
+        {
+            return Execute(typeof(T), sql, queryType, parameters).Cast<T>().ToArray();
         }
 
         /// <summary>
@@ -195,7 +231,7 @@ namespace InoSoft.Tools.Data
         /// <param name="item">Encapsulated batch of queries.</param>
         protected override void ProcessItem(SqlBatch item)
         {
-            foreach (var query in item.Queries)
+            foreach (SqlQuery query in item.Queries)
             {
                 try
                 {
@@ -204,14 +240,14 @@ namespace InoSoft.Tools.Data
                     {
                         try
                         {
-                            _sqlConnection.Open();
+                            OpenConnection(1);
                         }
                         catch (SqlException ex)
                         {
                             if (ex.Number == 4060 && _createDatabase)
                             {
                                 CreateDatabase();
-                                OpenConnection();
+                                OpenConnection(CreateDatabaseRetryCount);
                             }
                             else
                             {
@@ -220,19 +256,22 @@ namespace InoSoft.Tools.Data
                         }
                     }
 
-                    using (var command = _sqlConnection.CreateCommand())
+                    using (SqlCommand command = _sqlConnection.CreateCommand())
                     {
-                        // Init command SQL text and parameters.
+                        // Initialize SQL command.
+                        command.CommandType = query.QueryType == SqlQueryType.Procedure
+                            ? CommandType.StoredProcedure
+                            : CommandType.Text;
                         command.CommandText = query.Sql;
                         command.Parameters.AddRange(query.Parameters);
                         command.CommandTimeout = query.Timeout;
 
                         if (query.ElementType != null)
                         {
-                            // We want command to have result of desired type.
-                            using (var reader = command.ExecuteReader(CommandBehavior.KeyInfo))
+                            // Convert/map the result to the desired type.
+                            using (DbDataReader reader = command.ExecuteReader())
                             {
-                                List<object> result = SqlTypes.Contains(query.ElementType)
+                                IEnumerable<object> result = SqlTypes.Contains(query.ElementType)
                                     ? ReadSqlTypeResult(reader)
                                     : ReadCustomTypeResult(reader, query.ElementType);
 
@@ -263,10 +302,8 @@ namespace InoSoft.Tools.Data
         /// <returns>
         /// A result set of the specified type.
         /// </returns>
-        private static List<object> ReadCustomTypeResult(SqlDataReader reader, Type elementType)
+        private static IEnumerable<object> ReadCustomTypeResult(DbDataReader reader, Type elementType)
         {
-            var result = new List<object>();
-
             // Get properties that match column names in the result set.
             var properties = new ResultProperty[reader.VisibleFieldCount];
             for (int i = 0; i < reader.VisibleFieldCount; i++)
@@ -298,9 +335,8 @@ namespace InoSoft.Tools.Data
 
                     property.Info.SetValue(resultItem, value, null);
                 }
-                result.Add(resultItem);
+                yield return resultItem;
             }
-            return result;
         }
 
         /// <summary>
@@ -311,15 +347,13 @@ namespace InoSoft.Tools.Data
         /// A result set.
         /// </returns>
         /// <seealso cref="SqlTypes"/>
-        private static List<object> ReadSqlTypeResult(SqlDataReader reader)
+        private static IEnumerable<object> ReadSqlTypeResult(IDataReader reader)
         {
-            var result = new List<object>();
             while (reader.Read())
             {
-                var sqlValue = reader.GetValue(0);
-                result.Add(sqlValue == DBNull.Value ? null : sqlValue);
+                object sqlValue = reader.GetValue(0);
+                yield return sqlValue == DBNull.Value ? null : sqlValue;
             }
-            return result;
         }
 
         /// <summary>
@@ -345,38 +379,48 @@ namespace InoSoft.Tools.Data
             using (var connection = new SqlConnection(connectionString.ToString()))
             {
                 connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = String.Format("CREATE DATABASE [{0}]", dbName);
-                command.CommandTimeout = _commandTimeout;
-                command.ExecuteNonQuery();
+                using (SqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = String.Format("CREATE DATABASE [{0}]", dbName);
+                    command.CommandTimeout = _commandTimeout;
+                    command.ExecuteNonQuery();
+                }
             }
         }
 
         /// <summary>
-        /// Tries to connect to the database specified in the connection string
-        /// <see cref="CreateDatabaseRetryCount"/> times.
+        /// Tries to connect to the database specified in the connection string the specified amount of times.
         /// </summary>
+        /// <param name="retryCount">Number of connection attempts before throwing exception.</param>
         /// <remarks>
         /// SQL server may not create a database immediately, thus some retries can be performed.
         /// </remarks>
-        private void OpenConnection()
+        private void OpenConnection(int retryCount)
         {
-            for (int i = 0; i < _createDatabaseRetryCount; i++)
+            for (int i = 0; ; )
             {
                 try
                 {
                     _sqlConnection.Open();
+
+                    // Set connection options.
+                    using (SqlCommand command = _sqlConnection.CreateCommand())
+                    {
+                        command.CommandText = "SET ARITHABORT ON";
+                        command.ExecuteNonQuery();
+                    }
                     break;
                 }
                 catch (SqlException ex)
                 {
-                    // Rethrow exception if we couldn't connect not because the database does not exist.
-                    if (ex.Number != 4060)
-                    {
+                    // Rethrow exception if we the reason of the exception is not that the database does not exist,
+                    // or this is the last attempt.
+                    if (ex.Number != 4060 || ++i == retryCount)
                         throw;
-                    }
+
+                    // Otherwise, wait and try again.
+                    Thread.Sleep(_createDatabaseRetryInterval);
                 }
-                Thread.Sleep(_createDatabaseRetryInterval);
             }
         }
 
