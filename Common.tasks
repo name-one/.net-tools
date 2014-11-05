@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="Zip" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+      <Overwrite ParameterType="System.Boolean" Required="false" />
+	</ParameterGroup>
+    <Task>
+      <Reference Include="System.IO.Compression" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs">
+      <![CDATA[
+        try
+        {
+          const int bufferSize = 64 * 1024;
+          var buffer = new byte[bufferSize];
+          FileMode fileMode = Overwrite ? FileMode.Create : FileMode.CreateNew;
+
+          string outputDir = Path.GetDirectoryName(OutputFile);
+          if (outputDir != null && !Directory.Exists(outputDir))
+          {
+            Directory.CreateDirectory(outputDir);
+          }
+
+          using (var outputFileStream = new FileStream(OutputFile, fileMode))
+          using (var archive = new ZipArchive(outputFileStream, ZipArchiveMode.Create))
+          {
+            foreach (string inputFileName in InputFiles.Select(f => f.ItemSpec))
+            {
+              var archiveEntry = archive.CreateEntry(Path.GetFileName(inputFileName),
+                CompressionLevel.Optimal);
+              
+              var fileInfo = new FileInfo(inputFileName);
+              if (!fileInfo.Exists)
+                throw new FileNotFoundException(String.Format(@"Could not find file '{0}'.",
+                  inputFileName), inputFileName);
+              
+              archiveEntry.LastWriteTime = fileInfo.LastWriteTime;
+              
+              using (var fs = new FileStream(inputFileName, FileMode.Open))
+              using (var zipStream = archiveEntry.Open())
+              {
+                int bytesRead;
+                while ((bytesRead = fs.Read(buffer, 0, bufferSize)) > 0)
+                {
+                  zipStream.Write(buffer, 0, bytesRead);
+                }
+              }
+            }
+          }
+          return true;
+        }
+        catch (Exception ex)
+        {
+          Log.LogErrorFromException(ex);
+          return false;
+        }
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="ExcludeFilesWithSameNames" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+    <ParameterGroup>
+      <InputFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <ExcludeFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <FilteredFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+	</ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs">
+      <![CDATA[
+        try
+        {
+          var filteredFiles = new List<ITaskItem>();
+          var exclude = new HashSet<string>(ExcludeFiles
+            .Select(f => Path.GetFileName(f.ItemSpec))
+            .Where(s => s != null));
+          foreach (ITaskItem inputFile in InputFiles)
+          {
+            string fileName = Path.GetFileName(inputFile.ItemSpec);
+            if (fileName != null && !exclude.Contains(fileName))
+            {
+              filteredFiles.Add(inputFile);
+            }
+          }
+          FilteredFiles = filteredFiles.ToArray();
+          return true;
+        }
+        catch (Exception ex)
+        {
+          Log.LogErrorFromException(ex);
+          return false;
+        }
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+</Project>
