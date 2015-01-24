@@ -38,6 +38,7 @@
   <ItemGroup>
     <Compile Include="ArrayExtensions.cs" />
     <Compile Include="AssemblyCreator.cs" />
+    <Compile Include="AssemblyResourceLoader.cs" />
     <Compile Include="AsyncIterationRunner.cs" />
     <Compile Include="AsyncProcessor.cs" />
     <Compile Include="CacheQueue.cs" />
