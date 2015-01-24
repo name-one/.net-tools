@@ -42,6 +42,7 @@
     <Compile Include="AsyncIterationRunner.cs" />
     <Compile Include="AsyncProcessor.cs" />
     <Compile Include="CacheQueue.cs" />
+    <Compile Include="CommandLineParameters.cs" />
     <Compile Include="CustomEventHandler.cs" />
     <Compile Include="EnumlessTypeHelper.cs" />
     <Compile Include="HashSetHelper.cs" />
