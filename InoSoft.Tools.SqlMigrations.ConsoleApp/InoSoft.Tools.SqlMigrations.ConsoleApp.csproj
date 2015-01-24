@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{997B6559-F265-4A89-B164-678D76CFBABF}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>InoSoft.Tools.SqlMigrations.ConsoleApp</RootNamespace>
+    <AssemblyName>sqlmigrate</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ResourceDir>Resources\</ResourceDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\InoSoft.Tools\AssemblyResourceLoader.cs">
+      <Link>AssemblyResourceLoader.cs</Link>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InoSoft.Tools.SqlMigrations\InoSoft.Tools.SqlMigrations.csproj">
+      <Project>{84D48EAD-87A5-4C18-B56A-4943EC79A2BE}</Project>
+      <Name>InoSoft.Tools.SqlMigrations</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
+      <Project>{52CABCDD-0D54-4301-BCAE-100040B04133}</Project>
+      <Name>InoSoft.Tools</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Readme.txt" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="AfterResolveReferences">
+    <ItemGroup>
+      <DependencyResource Include="@(ReferencePath)" Condition="'%(CopyLocal)' == 'true'" />
+      <DependencyResource Include="@(ReferenceDependencyPaths)" Condition="'%(CopyLocal)' == 'true'" />
+    </ItemGroup>
+    <Message Condition="'@(DependencyResource)' != ''" Text="Embedding dependencies in resources: @(DependencyResource)" Importance="high" />
+    <Copy SourceFiles="@(DependencyResource)" DestinationFiles="@(DependencyResource->'$(ProjectDir)$(ResourceDir)%(Filename)%(Extension)')" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="true" />
+    <ItemGroup>
+      <EmbeddedResource Include="$(ResourceDir)*.*" />
+    </ItemGroup>
+  </Target>
+</Project>
