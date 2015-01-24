@@ -145,6 +145,7 @@ namespace InoSoft.Tools.Data
         /// <param name="elementType">Type of the elements, or <c>null</c> if no query result is expected.</param>
         /// <param name="sql">SQL query string.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public Array Execute(Type elementType, string sql, params object[] parameters)
         {
             return Execute(elementType, sql, SqlQueryType.General, parameters);
@@ -157,6 +158,7 @@ namespace InoSoft.Tools.Data
         /// <param name="sql">SQL query string.</param>
         /// <param name="queryType">Query type.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public Array Execute(Type elementType, string sql, SqlQueryType queryType, params object[] parameters)
         {
             // Create an encapsulated query and push it into the queue.
@@ -176,8 +178,8 @@ namespace InoSoft.Tools.Data
 
             if (query.Exception != null)
             {
-                // Rethrow the exception if one has occured.
-                throw query.Exception;
+                // Rethrow the exception if one has occurred.
+                throw new SqlCommandException(query.Exception);
             }
 
             return query.Result;
@@ -188,6 +190,7 @@ namespace InoSoft.Tools.Data
         /// </summary>
         /// <param name="sql">SQL query string.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public void Execute(string sql, params object[] parameters)
         {
             Execute(null, sql, parameters);
@@ -199,6 +202,7 @@ namespace InoSoft.Tools.Data
         /// <param name="sql">SQL query string.</param>
         /// <param name="queryType">Query type.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public void Execute(string sql, SqlQueryType queryType, params object[] parameters)
         {
             Execute(null, sql, queryType, parameters);
@@ -209,6 +213,7 @@ namespace InoSoft.Tools.Data
         /// </summary>
         /// <param name="sql">SQL query string.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public T[] Execute<T>(string sql, params object[] parameters)
         {
             return Execute<T>(sql, SqlQueryType.General, parameters);
@@ -220,6 +225,7 @@ namespace InoSoft.Tools.Data
         /// <param name="sql">SQL query string.</param>
         /// <param name="queryType">Query type.</param>
         /// <param name="parameters">Optional named parameters.</param>
+        /// <exception cref="SqlCommandException">A SQL error occurred while executing the SQL command.</exception>
         public T[] Execute<T>(string sql, SqlQueryType queryType, params object[] parameters)
         {
             return Execute(typeof(T), sql, queryType, parameters).Cast<T>().ToArray();
