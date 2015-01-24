@@ -2,6 +2,9 @@
 
 namespace InoSoft.Tools.Data
 {
+    /// <summary>
+    ///   Indicates that a method should be treated as a SQL function.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Method)]
     public class FunctionAttribute : Attribute
     {
@@ -9,9 +12,14 @@ namespace InoSoft.Tools.Data
         private readonly string _schema;
 
         /// <summary>
-        /// Creates attribute.
+        ///   Initializes a new instance of the <see cref="FunctionAttribute"/> class.
         /// </summary>
-        /// <param name="isTableValued">Determines that SQL function is table-valued or scalar-valued.</param>
+        /// <param name="isTableValued">
+        ///   <c>true</c> if the function is table-valued;
+        ///   <br />
+        ///   <c>false</c> if the function is scalar-valued.
+        /// </param>
+        /// <param name="schema">The schema that contains the function.</param>
         public FunctionAttribute(bool isTableValued = true, string schema = "dbo")
         {
             _isTableValued = isTableValued;
@@ -19,11 +27,37 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
-        /// Gets SQL query with invoking function.
+        ///   Gets a value indicating whether the function is table-valued.
         /// </summary>
-        /// <param name="functionName">SQL function name.</param>
-        /// <param name="paramsString">PArameters of the SQL function.</param>
-        /// <returns></returns>
+        /// <value>
+        ///   <c>true</c> if the function is table-valued;
+        ///   <br />
+        ///   <c>false</c> if the function is scalar-valued.
+        /// </value>
+        public bool IsTableValued
+        {
+            get { return _isTableValued; }
+        }
+
+        /// <summary>
+        ///   Gets the schema that contains the function.
+        /// </summary>
+        /// <value>
+        ///   The schema that contains the function.
+        /// </value>
+        public string Schema
+        {
+            get { return _schema; }
+        }
+
+        /// <summary>
+        ///   Gets a SQL query invoking the function.
+        /// </summary>
+        /// <param name="functionName">The function name.</param>
+        /// <param name="paramsString">The parameters of the SQL function.</param>
+        /// <returns>
+        ///   A SQL query invoking the function.
+        /// </returns>
         internal string GetQuery(string functionName, string paramsString)
         {
             return String.Format(
