@@ -85,7 +85,7 @@ namespace InoSoft.Tools.SqlMigrations
         ///   <paramref name="connectionString"/> or <paramref name="versionProperty"/> in <c>null</c>.
         /// </exception>
         /// <exception cref="SqlCommandException">Failed to read from the database.</exception>
-        /// <exception cref="InvalidOperationException">Schema version is not specified in the database.</exception>
+        /// <exception cref="DbVersionMissingException">Schema version is not specified in the database.</exception>
         /// <exception cref="FormatException">Schema version is not in a valid format.</exception>
         public static DbVersion Read(string connectionString, string versionProperty)
         {
@@ -112,7 +112,7 @@ namespace InoSoft.Tools.SqlMigrations
         ///   <paramref name="context"/> or <paramref name="versionProperty"/> in <c>null</c>.
         /// </exception>
         /// <exception cref="SqlCommandException">Failed to read from the database.</exception>
-        /// <exception cref="InvalidOperationException">Schema version is not specified in the database.</exception>
+        /// <exception cref="DbVersionMissingException">Schema version is not specified in the database.</exception>
         /// <exception cref="FormatException">Schema version is not in a valid format.</exception>
         public static DbVersion Read(SqlContext context, string versionProperty)
         {
@@ -128,7 +128,7 @@ namespace InoSoft.Tools.SqlMigrations
                 .FirstOrDefault();
 
             if (versionString == null)
-                throw new InvalidOperationException("Schema version is not specified in the database.");
+                throw new DbVersionMissingException("Schema version is not specified in the database.");
 
             return Parse(versionString);
         }

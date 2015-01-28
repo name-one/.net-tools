@@ -1,4 +1,4 @@
-﻿SQL Migrations v1.0.1
+﻿SQL Migrations v1.0.2
 (c) InoSoft International LLC 2014-2015
 
 Usage: sqlmigrate <command> <cmd params> [param1=value1 [param2=value2 [...]]]

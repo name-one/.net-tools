@@ -51,6 +51,7 @@
     <Compile Include="DbUpdateCommandException.cs" />
     <Compile Include="DbUpdateException.cs" />
     <Compile Include="DbVersion.cs" />
+    <Compile Include="DbVersionMissingException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sqlver\SqlverMigrator.cs" />
     <Compile Include="Sqlver\SqlverRepositoryMigrator.cs" />

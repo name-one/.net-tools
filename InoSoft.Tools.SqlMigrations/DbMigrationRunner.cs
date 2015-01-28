@@ -48,6 +48,8 @@ namespace InoSoft.Tools.SqlMigrations
         /// <param name="commandTimeout">The timeout of a single SQL command, in seconds.</param>
         /// <exception cref="InvalidOperationException">
         ///   <see cref="Settings"/>.<see cref="DbMigrationSettings.ProjectPath"/> is not an absolute path.
+        ///   <br/>or<br/>
+        ///   The previous migration was not completed.
         /// </exception>
         /// <exception cref="DirectoryNotFoundException">
         ///   Project directory not found.
@@ -56,12 +58,17 @@ namespace InoSoft.Tools.SqlMigrations
         /// </exception>
         /// <exception cref="IOException">Failed to read the migrations.</exception>
         /// <exception cref="FileNotFoundException">SQL project not found.</exception>
-        /// <exception cref="SqlCommandException">A SQL error occurred while reading existing objects.</exception>
+        /// <exception cref="SqlCommandException">
+        ///   A SQL error occurred while reading existing objects.
+        ///   <br/>or<br/>
+        ///   Failed to write version to the database.
+        /// </exception>
         /// <exception cref="DbUpdateCommandException">An error occurred while executing a migration command.</exception>
         /// <exception cref="AggregateException">
         ///   Update of views, functions or procedures completed with errors.
         ///   Contains exceptions that occurred during the update.
         /// </exception>
+        /// <exception cref="DbUpdateException">An error occurred while reading database schema version.</exception>
         public void Update(int commandTimeout = 30)
         {
             // Find the project directory.
@@ -218,10 +225,10 @@ namespace InoSoft.Tools.SqlMigrations
         /// </summary>
         /// <param name="context">The database context to run migrations against.</param>
         /// <param name="migrations">The migrations to run.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   The previous migration was not completed.
-        /// </exception>
+        /// <exception cref="InvalidOperationException">The previous migration was not completed.</exception>
+        /// <exception cref="DbUpdateException">An error occurred while reading database schema version.</exception>
         /// <exception cref="DbUpdateCommandException">An error occurred while executing a migration command.</exception>
+        /// <exception cref="SqlCommandException">Failed to write version to the database.</exception>
         private void RunMigrations(SqlContext context, DbMigration[] migrations)
         {
             // Read the current schema version from the database.
@@ -229,6 +236,13 @@ namespace InoSoft.Tools.SqlMigrations
             try
             {
                 currentVersion = DbVersion.Read(context, Settings.VersionProperty);
+            }
+            catch (DbVersionMissingException ex)
+            {
+                OutputLog.WriteLine(ex.Message);
+                currentVersion = new DbVersion(new Version(0, 0, 0, 0));
+                currentVersion.Write(context, Settings.VersionProperty);
+                OutputLog.WriteLine("Initialized database schema version to v{0}.", currentVersion);
             }
             catch (Exception ex)
             {
