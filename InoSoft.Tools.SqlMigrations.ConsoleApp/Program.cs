@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using InoSoft.Tools.SqlMigrations.Sqlver;
 
 namespace InoSoft.Tools.SqlMigrations.ConsoleApp
 {
@@ -44,7 +45,7 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
 
                     try
                     {
-                        Console.Write("Loading the working copy from {0}... ", positional[1]);
+                        Console.Write("Loading the migration settings from {0}... ", positional[1]);
                         DbMigrationSettings settings = DbMigrationSettings.FromFile(positional[1]);
                         settings.Save(positional[1]);
                         Console.WriteLine("done.");
@@ -54,6 +55,60 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
                         runner.Update(p.GetNamedValue("timeout", 30));
                         Console.WriteLine();
                         Console.WriteLine("Update complete.");
+                        return 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error!");
+                        LogError(ex, isVerbose);
+                        return 1;
+                    }
+
+                case "sqlver-migrate-repo":
+                case "sr":
+                    if (positional.Length != 3)
+                        return ShowReadme(true);
+
+                    try
+                    {
+                        Console.Write("Loading the Sqlver repository from {0}... ", positional[1]);
+                        var xmlPath = p.GetNamedValue<string>("versions-xml");
+                        SqlverRepositoryMigrator migrator = xmlPath != null
+                            ? new SqlverRepositoryMigrator(positional[1], XmlVersionsModel.Read(xmlPath))
+                            : new SqlverRepositoryMigrator(positional[1], p.GetNamedValue("version", new Version(1, 0)));
+                        Console.WriteLine("done.");
+                        Console.WriteLine();
+                        Console.WriteLine("Starting the migration from Sqlver to SQL Migrations.");
+                        migrator.Convert(positional[2]);
+                        Console.WriteLine();
+                        Console.WriteLine("Migration complete.");
+                        return 0;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error!");
+                        LogError(ex, isVerbose);
+                        return 1;
+                    }
+
+                case "sqlver-migrate-copy":
+                case "sc":
+                    if (positional.Length != 3)
+                        return ShowReadme(true);
+
+                    try
+                    {
+                        Console.Write("Loading the Sqlver working copy from {0}... ", positional[1]);
+                        var xmlPath = p.GetNamedValue<string>("versions-xml");
+                        SqlverWorkingCopyMigrator migrator = xmlPath != null
+                            ? new SqlverWorkingCopyMigrator(positional[1], XmlVersionsModel.Read(xmlPath))
+                            : new SqlverWorkingCopyMigrator(positional[1], p.GetNamedValue("version", new Version(1, 0)));
+                        Console.WriteLine("done.");
+                        Console.WriteLine();
+                        Console.WriteLine("Starting the migration from Sqlver to SQL Migrations.");
+                        migrator.Convert(positional[2], p.GetNamedValue<string>("version-property"));
+                        Console.WriteLine();
+                        Console.WriteLine("Migration complete.");
                         return 0;
                     }
                     catch (Exception ex)
