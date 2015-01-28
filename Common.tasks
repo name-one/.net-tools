@@ -4,6 +4,7 @@
     <ParameterGroup>
       <InputFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
       <OutputFile ParameterType="System.String" Required="true" />
+      <InputRootDir ParameterType="System.String" Required="false" />
       <Overwrite ParameterType="System.Boolean" Required="false" />
 	</ParameterGroup>
     <Task>
@@ -16,6 +17,7 @@
           const int bufferSize = 64 * 1024;
           var buffer = new byte[bufferSize];
           FileMode fileMode = Overwrite ? FileMode.Create : FileMode.CreateNew;
+          Uri root = InputRootDir != null ? new Uri(Path.GetFullPath(InputRootDir)) : null;
 
           string outputDir = Path.GetDirectoryName(OutputFile);
           if (outputDir != null && !Directory.Exists(outputDir))
@@ -28,7 +30,10 @@
           {
             foreach (string inputFileName in InputFiles.Select(f => f.ItemSpec))
             {
-              var archiveEntry = archive.CreateEntry(Path.GetFileName(inputFileName),
+              var archiveEntry = archive.CreateEntry(root == null
+                ? Path.GetFileName(inputFileName)
+                : Uri.UnescapeDataString(root.MakeRelativeUri(new Uri(Path.GetFullPath(inputFileName))).ToString())
+                    .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
                 CompressionLevel.Optimal);
               
               var fileInfo = new FileInfo(inputFileName);
