@@ -6,7 +6,7 @@
       <OutputFile ParameterType="System.String" Required="true" />
       <InputRootDir ParameterType="System.String" Required="false" />
       <Overwrite ParameterType="System.Boolean" Required="false" />
-	</ParameterGroup>
+    </ParameterGroup>
     <Task>
       <Reference Include="System.IO.Compression" />
       <Using Namespace="System.IO.Compression" />
@@ -30,27 +30,34 @@
           {
             foreach (string inputFileName in InputFiles.Select(f => f.ItemSpec))
             {
-              var archiveEntry = archive.CreateEntry(root == null
-                ? Path.GetFileName(inputFileName)
-                : Uri.UnescapeDataString(root.MakeRelativeUri(new Uri(Path.GetFullPath(inputFileName))).ToString())
-                    .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
-                CompressionLevel.Optimal);
-              
-              var fileInfo = new FileInfo(inputFileName);
-              if (!fileInfo.Exists)
-                throw new FileNotFoundException(String.Format(@"Could not find file '{0}'.",
-                  inputFileName), inputFileName);
-              
-              archiveEntry.LastWriteTime = fileInfo.LastWriteTime;
-              
-              using (var fs = new FileStream(inputFileName, FileMode.Open))
-              using (var zipStream = archiveEntry.Open())
+              try
               {
-                int bytesRead;
-                while ((bytesRead = fs.Read(buffer, 0, bufferSize)) > 0)
+                var archiveEntry = archive.CreateEntry(root == null
+                  ? Path.GetFileName(inputFileName)
+                  : Uri.UnescapeDataString(root.MakeRelativeUri(new Uri(Path.GetFullPath(inputFileName))).ToString())
+                      .Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar),
+                  CompressionLevel.Optimal);
+
+                var fileInfo = new FileInfo(inputFileName);
+                if (!fileInfo.Exists)
+                  throw new FileNotFoundException(String.Format(@"Could not find file '{0}'.",
+                    inputFileName), inputFileName);
+
+                archiveEntry.LastWriteTime = fileInfo.LastWriteTime;
+
+                using (var fs = new FileStream(inputFileName, FileMode.Open))
+                using (var zipStream = archiveEntry.Open())
                 {
-                  zipStream.Write(buffer, 0, bytesRead);
+                  int bytesRead;
+                  while ((bytesRead = fs.Read(buffer, 0, bufferSize)) > 0)
+                  {
+                    zipStream.Write(buffer, 0, bytesRead);
+                  }
                 }
+              }
+              catch (Exception ex)
+              {
+                throw new Exception(String.Format("Failed to pack a file: {0}", inputFileName), ex);
               }
             }
           }
@@ -71,7 +78,7 @@
       <InputFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
       <ExcludeFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
       <FilteredFiles ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
-	</ParameterGroup>
+    </ParameterGroup>
     <Task>
       <Code Type="Fragment" Language="cs">
       <![CDATA[
