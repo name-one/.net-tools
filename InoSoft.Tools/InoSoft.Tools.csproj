@@ -47,6 +47,7 @@
     <Compile Include="EnumlessTypeHelper.cs" />
     <Compile Include="HashSetHelper.cs" />
     <Compile Include="IterationWaiter.cs" />
+    <Compile Include="LogHelper.cs" />
     <Compile Include="ObjectExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueueExtensions.cs" />

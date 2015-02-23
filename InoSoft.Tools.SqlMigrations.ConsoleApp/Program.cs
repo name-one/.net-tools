@@ -60,7 +60,7 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error!");
-                        LogError(ex, isVerbose);
+                        Console.Error.LogError(ex, isVerbose);
                         return 1;
                     }
 
@@ -87,7 +87,7 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error!");
-                        LogError(ex, isVerbose);
+                        Console.Error.LogError(ex, isVerbose);
                         return 1;
                     }
 
@@ -114,7 +114,7 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error!");
-                        LogError(ex, isVerbose);
+                        Console.Error.LogError(ex, isVerbose);
                         return 1;
                     }
 
@@ -128,36 +128,6 @@ namespace InoSoft.Tools.SqlMigrations.ConsoleApp
 
                 default:
                     return ShowReadme(true);
-            }
-        }
-
-        /// <summary>
-        ///   Logs an exception to the standard error output stream.
-        /// </summary>
-        /// <param name="ex">The exception to log.</param>
-        /// <param name="isVerbose">If set to <c>true</c>, logs stack trace and other details of the exception.</param>
-        private static void LogError(Exception ex, bool isVerbose)
-        {
-            if (isVerbose)
-            {
-                Console.Error.WriteLine(ex);
-            }
-            else
-            {
-                Console.Error.WriteLine(ex.Message);
-                var aggregate = ex as AggregateException;
-                if (aggregate != null)
-                {
-                    for (int i = 0; i < aggregate.InnerExceptions.Count; i++)
-                    {
-                        Console.Error.Write("{0}. ", i + 1);
-                        LogError(aggregate.InnerExceptions[i], false);
-                    }
-                }
-                else if (ex.InnerException != null)
-                {
-                    LogError(ex.InnerException, false);
-                }
             }
         }
 
