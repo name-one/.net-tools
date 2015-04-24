@@ -185,10 +185,6 @@ namespace InoSoft.Tools
         /// </returns>
         protected Assembly LoadAssembly(string assemblyName, byte[] data)
         {
-            foreach (AssemblyName referenceName in Assembly.ReflectionOnlyLoad(data).GetReferencedAssemblies())
-            {
-                GetAssembly(referenceName.FullName);
-            }
             Assembly assembly = Assembly.Load(data);
             _assemblies[assemblyName] = assembly;
             return assembly;
