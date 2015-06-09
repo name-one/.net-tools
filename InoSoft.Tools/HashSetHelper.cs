@@ -5,13 +5,17 @@ namespace InoSoft.Tools
     public static class HashSetHelper
     {
         /// <summary>
-        /// Creates a set that is an intersection of the two provided sets and deletes all elements belonging to this
-        /// intersection from the sets <paramref name="a"/> and <paramref name="b"/>.
+        ///   Creates a set that is an intersection of the two provided sets and deletes all elements belonging to this
+        ///   intersection from the sets <paramref name="a"/> and <paramref name="b"/>.
         /// </summary>
-        /// <typeparam name="T">Type of HashSet elements.</typeparam>
-        /// <param name="a">First set.</param>
-        /// <param name="b">Second set.</param>
-        /// <returns>Intersection of sets <paramref name="a"/> and <paramref name="b"/>.</returns>
+        /// <typeparam name="T">The type of elements in the sets.</typeparam>
+        /// <param name="a">The first set.</param>
+        /// <param name="b">The second set.</param>
+        /// <returns>
+        ///   A set containing the intersection of <paramref name="a"/> with <paramref name="b"/>, containing only
+        ///   those elements of <paramref name="a"/> that are present in <paramref name="b"/> according to
+        ///   the equality comparer of <paramref name="a"/>.
+        /// </returns>
         public static HashSet<T> SplitSets<T>(HashSet<T> a, HashSet<T> b)
         {
             // Create a set that is an intersection of A and B.

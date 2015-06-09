@@ -101,26 +101,105 @@ namespace InoSoft.Tools.SqlMigrations
                 OutputLog.WriteLine("Updating schema...");
                 RunMigrations(context, migrations);
 
+                var exceptions = new List<Exception>();
+
+                const string sql =
+                    "SELECT SCHEMA_NAME(schema_id) AS [Schema], name AS [Name], OBJECT_DEFINITION(object_id) AS [Definition] FROM sys.objects WHERE {0}";
+
                 // Update views.
                 OutputLog.WriteLine();
                 OutputLog.WriteLine("Updating views...");
-                DbObject[] views = context.Execute<DbObject>(
-                    "SELECT TABLE_SCHEMA AS [Schema], TABLE_NAME AS Name FROM INFORMATION_SCHEMA.VIEWS");
-                ReplaceObjects(context, "VIEW", viewDefinitions, views);
+                try
+                {
+                    DbObject[] views = context.Execute<DbObject>(String.Format(sql, "type = 'V'"));
+                    ReplaceObjects(context, "VIEW", viewDefinitions,
+                        views.Select(DbObjectDefinition.FromDbObject));
+                }
+                catch (AggregateException ex)
+                {
+                    exceptions.AddRange(ex.InnerExceptions);
+                }
 
                 // Update user-defined functions.
                 OutputLog.WriteLine();
                 OutputLog.WriteLine("Updating user-defined functions...");
-                DbObject[] functions = context.Execute<DbObject>(
-                    "SELECT ROUTINE_SCHEMA AS [Schema], ROUTINE_NAME AS Name FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'FUNCTION'");
-                ReplaceObjects(context, "FUNCTION", functionDefinitions, functions);
+                try
+                {
+                    DbObject[] functions = context.Execute<DbObject>(String.Format(sql, "type IN ('FN', 'IF', 'TF')"));
+                    ReplaceObjects(context, "FUNCTION", functionDefinitions,
+                        functions.Select(DbObjectDefinition.FromDbObject));
+                }
+                catch (AggregateException ex)
+                {
+                    exceptions.AddRange(ex.InnerExceptions);
+                }
 
                 // Update stored procedures.
                 OutputLog.WriteLine();
                 OutputLog.WriteLine("Updating stored procedures...");
-                DbObject[] procedures = context.Execute<DbObject>(
-                    "SELECT ROUTINE_SCHEMA AS [Schema], ROUTINE_NAME AS Name FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_TYPE = 'PROCEDURE'");
-                ReplaceObjects(context, "PROCEDURE", procedureDefinitions, procedures);
+                try
+                {
+                    DbObject[] procedures = context.Execute<DbObject>(String.Format(sql, "type = 'P'"));
+                    ReplaceObjects(context, "PROCEDURE", procedureDefinitions,
+                        procedures.Select(DbObjectDefinition.FromDbObject));
+                }
+                catch (AggregateException ex)
+                {
+                    exceptions.AddRange(ex.InnerExceptions);
+                }
+
+                if (exceptions.Count > 0)
+                    throw new AggregateException(exceptions);
+            }
+        }
+
+        /// <summary>
+        ///   Creates the object in the database.
+        /// </summary>
+        /// <param name="context">The database context.</param>
+        /// <param name="type">The type of the object to create.</param>
+        /// <param name="obj">The definition of the object to create.</param>
+        /// <param name="exceptions">The list of exceptions to log any occurring exceptions to.</param>
+        private void CreateObject(ISqlContext context, string type, DbObjectDefinition obj,
+            ICollection<Exception> exceptions)
+        {
+            OutputLog.Write("Creating {0}... ", obj.FullName);
+            try
+            {
+                context.Execute(obj.Definition);
+                OutputLog.WriteLine("done.");
+            }
+            catch (SqlCommandException ex)
+            {
+                exceptions.Add(new DbUpdateException(String.Format("Failed to create {0} {1}.",
+                    type.ToLowerInvariant(), obj.FullName), ex.InnerException));
+                OutputLog.WriteLine("error.");
+                OutputLog.WriteLine(ex.Message);
+            }
+        }
+
+        /// <summary>
+        ///   Drops the object in the database.
+        /// </summary>
+        /// <param name="context">The database context.</param>
+        /// <param name="type">The type of the object to drop.</param>
+        /// <param name="obj">The definition of the object to drop.</param>
+        /// <param name="exceptions">The list of exceptions to log any occurring exceptions to.</param>
+        private void DropObject(ISqlContext context, string type, DbObjectDefinition obj,
+            ICollection<Exception> exceptions)
+        {
+            OutputLog.Write("Dropping {0}... ", obj.FullName);
+            try
+            {
+                context.Execute(String.Format("DROP {0} {1}", type, obj.FullName));
+                OutputLog.WriteLine("done.");
+            }
+            catch (SqlCommandException ex)
+            {
+                exceptions.Add(new DbUpdateException(String.Format("Failed to drop {0} {1}.",
+                    type.ToLowerInvariant(), obj.FullName), ex.InnerException));
+                OutputLog.WriteLine("error.");
+                OutputLog.WriteLine(ex.Message);
             }
         }
 
@@ -153,66 +232,72 @@ namespace InoSoft.Tools.SqlMigrations
         }
 
         /// <summary>
+        ///   Refreshes the view in the database.
+        /// </summary>
+        /// <param name="context">The database context.</param>
+        /// <param name="fullName">The full name of the view to refresh.</param>
+        /// <param name="exceptions">The list of exceptions to log any occurring exceptions to.</param>
+        private void RefreshView(ISqlContext context, string fullName, ICollection<Exception> exceptions)
+        {
+            OutputLog.Write("Refreshing {0}... ", fullName);
+            try
+            {
+                context.Execute(String.Format("EXEC sp_refreshview '{0}'", fullName));
+                OutputLog.WriteLine("done.");
+            }
+            catch (SqlCommandException ex)
+            {
+                exceptions.Add(new DbUpdateException(String.Format("Failed to refresh view {0}.",
+                    fullName), ex.InnerException));
+                OutputLog.WriteLine("error.");
+                OutputLog.WriteLine(ex.Message);
+            }
+        }
+
+        /// <summary>
         ///   Replaces the existing database objects with new ones.
         /// </summary>
         /// <param name="context">The database context to replace objects in.</param>
         /// <param name="type">The type of the objects.</param>
         /// <param name="newObjects">The new object definitions.</param>
-        /// <param name="oldObjects">The old objects.</param>
+        /// <param name="oldObjects">The old object definitions.</param>
         /// <exception cref="AggregateException">
         ///   Update completed with errors. Contains exceptions that occurred during the update.
         /// </exception>
         private void ReplaceObjects(ISqlContext context, string type,
-            IEnumerable<DbObjectDefinition> newObjects, IEnumerable<DbObject> oldObjects)
+            IEnumerable<DbObjectDefinition> newObjects, IEnumerable<DbObjectDefinition> oldObjects)
         {
-            // Group existing objects by schema.
-            Dictionary<string, string[]> oldGroup = oldObjects
-                .GroupBy(p => p.Schema)
-                .ToDictionary(g => g.Key, g => g.Select(p => p.Name).ToArray());
-
+            var newDefs = new HashSet<DbObjectDefinition>(newObjects);
+            var oldDefs = new HashSet<DbObjectDefinition>(oldObjects);
+            var sameDefs = HashSetHelper.SplitSets(newDefs, oldDefs);
+            var addedDefs = new HashSet<DbObjectDefinition>(newDefs, DbObjectDefinition.FullNameComparer);
+            var removedDefs = new HashSet<DbObjectDefinition>(oldDefs, DbObjectDefinition.FullNameComparer);
+            var modifiedDefs = HashSetHelper.SplitSets(addedDefs, removedDefs);
             var exceptions = new List<Exception>();
 
-            // Update objects.
-            foreach (var schema in newObjects.GroupBy(p => p.Schema))
+            foreach (DbObjectDefinition definition in removedDefs.OrderBy(d => d.FullName))
             {
-                // Drop existing objects.
-                string[] objects;
-                if (oldGroup.TryGetValue(schema.Key, out objects))
-                {
-                    foreach (string obj in objects)
-                    {
-                        OutputLog.Write("Dropping [{0}].[{1}]... ", schema.Key, obj);
-                        try
-                        {
-                            context.Execute(String.Format("DROP {0} [{1}].[{2}]", type, schema.Key, obj));
-                            OutputLog.WriteLine("done.");
-                        }
-                        catch (SqlCommandException ex)
-                        {
-                            exceptions.Add(new DbUpdateException(String.Format("Failed to drop {0} [{1}].[{2}].",
-                                type.ToLowerInvariant(), schema.Key, obj), ex.InnerException));
-                            OutputLog.WriteLine("error.");
-                            OutputLog.WriteLine(ex.Message);
-                        }
-                    }
-                }
+                // Drop the deleted objects.
+                DropObject(context, type, definition, exceptions);
+            }
+            foreach (DbObjectDefinition definition in modifiedDefs.OrderBy(d => d.FullName))
+            {
+                // Drop and recreate the modified objects.
+                DropObject(context, type, definition, exceptions);
+                CreateObject(context, type, definition, exceptions);
+            }
+            foreach (DbObjectDefinition definition in addedDefs.OrderBy(d => d.FullName))
+            {
+                // Create the added objects.
+                CreateObject(context, type, definition, exceptions);
+            }
 
-                // Create new objects.
-                foreach (DbObjectDefinition obj in schema)
+            if (type == "VIEW")
+            {
+                foreach (DbObjectDefinition definition in sameDefs.OrderBy(d => d.FullName))
                 {
-                    OutputLog.Write("Creating {0}... ", obj.FullName);
-                    try
-                    {
-                        context.Execute(obj.Definition);
-                        OutputLog.WriteLine("done.");
-                    }
-                    catch (SqlCommandException ex)
-                    {
-                        exceptions.Add(new DbUpdateException(String.Format("Failed to create {0} {1}.",
-                            type.ToLowerInvariant(), obj.FullName), ex.InnerException));
-                        OutputLog.WriteLine("error.");
-                        OutputLog.WriteLine(ex.Message);
-                    }
+                    // Refresh the views that were not modified.
+                    RefreshView(context, definition.FullName, exceptions);
                 }
             }
 

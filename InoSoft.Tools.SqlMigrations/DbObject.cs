@@ -8,6 +8,14 @@ namespace InoSoft.Tools.SqlMigrations
     internal class DbObject
     {
         /// <summary>
+        ///   Gets or sets the definition of this database object.
+        /// </summary>
+        /// <value>
+        ///   The definition of this database object.
+        /// </value>
+        public string Definition { get; set; }
+
+        /// <summary>
         ///   Gets or sets the name of this database object.
         /// </summary>
         /// <value>
