@@ -106,7 +106,7 @@ namespace InoSoft.Tools.Data
             var failedQuery = batch.Queries.FirstOrDefault(q => q.Exception != null);
             if (failedQuery != null)
             {
-                throw failedQuery.Exception;
+                throw new SqlCommandException(failedQuery.Exception);
             }
         }
     }

@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 
 namespace InoSoft.Tools.Data
@@ -237,6 +239,7 @@ namespace InoSoft.Tools.Data
         /// <param name="item">Encapsulated batch of queries.</param>
         protected override void ProcessItem(SqlBatch item)
         {
+            item.Queries = CompressBatch(item).ToArray();
             foreach (SqlQuery query in item.Queries)
             {
                 try
@@ -298,6 +301,39 @@ namespace InoSoft.Tools.Data
                 }
             }
             item.Signal();
+        }
+
+        /// <summary>
+        /// Converts the query to the <see cref="SqlQueryType.General"/> type, renames its parameters.
+        /// </summary>
+        /// <param name="query">The query.</param>
+        /// <param name="paramPrefix">The parameter prefix.</param>
+        /// <returns>
+        /// A SQL query of the <see cref="SqlQueryType.General"/> type.
+        /// </returns>
+        private static SqlQuery GeneralizeQuery(SqlQuery query, string paramPrefix)
+        {
+            if (query.QueryType != SqlQueryType.Procedure)
+                // TODO: Replace parameters of general queries in a batch.
+                return query;
+
+            int i = 0;
+            var parameters = new StringBuilder();
+            foreach (SqlParameter parameter in query.Parameters)
+            {
+                string name = String.Format("q{0}p{1}", paramPrefix, i++);
+                if (parameters.Length > 0)
+                {
+                    parameters.Append(", ");
+                }
+                parameters.AppendFormat("@{0} = @{1}", parameter.ParameterName, name);
+                parameter.ParameterName = name;
+            }
+
+            query.QueryType = SqlQueryType.General;
+            query.Sql = String.Format("EXEC {0} {1}", query.Sql, parameters);
+
+            return query;
         }
 
         /// <summary>
@@ -363,6 +399,47 @@ namespace InoSoft.Tools.Data
         }
 
         /// <summary>
+        /// Compresses the queries in a batch into large multi-statement queries.
+        /// </summary>
+        /// <param name="batch">The batch to compress.</param>
+        /// <returns>
+        /// A collection of multi-statement queries.
+        /// </returns>
+        private IEnumerable<SqlQuery> CompressBatch(SqlBatch batch)
+        {
+            if (batch.Queries.Length == 0)
+                yield break;
+
+            if (batch.Queries.Length == 1)
+            {
+                yield return batch.Queries[0];
+                yield break;
+            }
+
+            int i = 0;
+            var commandText = new StringBuilder();
+            var parameters = new List<object>();
+            foreach (SqlQuery query in batch.Queries)
+            {
+                const int maxSqlParameters = 2100;
+                if (parameters.Count + query.Parameters.Length >= maxSqlParameters)
+                {
+                    yield return CreateQuery(commandText.ToString(), parameters.ToArray<object>());
+                    i = 0;
+                    commandText.Clear();
+                    parameters.Clear();
+                }
+
+                SqlQuery generalizedQuery = GeneralizeQuery(query, (i++).ToString(CultureInfo.InvariantCulture));
+
+                commandText.Append(generalizedQuery.Sql).AppendLine(";");
+                parameters.AddRange(generalizedQuery.Parameters);
+            }
+
+            yield return CreateQuery(commandText.ToString(), parameters.ToArray<object>());
+        }
+
+        /// <summary>
         /// Creates a connection from the connection string.
         /// </summary>
         private void CreateConnection()
@@ -392,6 +469,26 @@ namespace InoSoft.Tools.Data
                     command.ExecuteNonQuery();
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates a SQL query.
+        /// </summary>
+        /// <param name="sql">The query string.</param>
+        /// <param name="parameters">The query parameters.</param>
+        /// <returns>
+        /// A new SQL query with the specified query string and parameters.
+        /// </returns>
+        private SqlQuery CreateQuery(string sql, object[] parameters)
+        {
+            return new SqlQuery
+            {
+                ElementType = null,
+                QueryType = SqlQueryType.General,
+                Sql = sql,
+                Parameters = parameters,
+                Timeout = _commandTimeout,
+            };
         }
 
         /// <summary>
