@@ -188,6 +188,7 @@ namespace InoSoft.Tools.Data
                     string paramCasted = parameter.ParameterType.IsEnum
                         ? String.Format("(({0}){1})", Enum.GetUnderlyingType(parameter.ParameterType), parameter.Name)
                         : parameter.Name;
+                    SqlTypeAttribute[] typeAttributes;
                     if (parameter.ParameterType == typeof(string))
                     {
                         invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
@@ -198,6 +199,13 @@ namespace InoSoft.Tools.Data
                         invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
                             "new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){1}.Value : DBNull.Value)",
                             parameter.Name, paramCasted)));
+                    }
+                    else if (parameter.ParameterType.IsArray
+                        && (typeAttributes = parameter.GetAttributes<SqlTypeAttribute>()).Length > 0)
+                    {
+                        invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
+                            "new {0}().CreateParameter(\"{1}\", {1})",
+                            typeAttributes[0].GetType().FullName, parameter.Name)));
                     }
                     else
                     {

@@ -93,14 +93,14 @@ namespace InoSoft.Tools
         }
 
         /// <summary>
-        /// Gets member attributes of the specified type.
+        /// Gets all attributes of the specified type from an attribute provider.
         /// </summary>
         /// <typeparam name="TAttribute">Attribute type.</typeparam>
-        /// <param name="memberInfo">Member, attributes of which to get.</param>
-        /// <returns>Attributes of the member.</returns>
-        public static TAttribute[] GetAttributes<TAttribute>(this MemberInfo memberInfo)
+        /// <param name="attributeProvider">Attribute provider to get attributes from.</param>
+        /// <returns>An array of attributes of the specified type that the attribute provider returned.</returns>
+        public static TAttribute[] GetAttributes<TAttribute>(this ICustomAttributeProvider attributeProvider)
         {
-            return memberInfo.GetCustomAttributes(typeof(TAttribute), true).Cast<TAttribute>().ToArray();
+            return attributeProvider.GetCustomAttributes(typeof(TAttribute), true).Cast<TAttribute>().ToArray();
         }
 
         /// <summary>

@@ -35,6 +35,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BatchContext.cs" />
@@ -44,10 +45,12 @@
     <Compile Include="SchemaAttribute.cs" />
     <Compile Include="SingleResultRequiredAttribute.cs" />
     <Compile Include="SqlBatch.cs" />
+    <Compile Include="SqlColumn.cs" />
     <Compile Include="SqlCommandException.cs" />
     <Compile Include="SqlQuery.cs" />
     <Compile Include="SqlContext.cs" />
     <Compile Include="SqlQueryType.cs" />
+    <Compile Include="SqlTypeAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">
