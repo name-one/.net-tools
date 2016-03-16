@@ -11,14 +11,26 @@ namespace InoSoft.Tools.Data
     public abstract class SqlTypeAttribute : Attribute
     {
         private readonly SqlColumn[] _columns;
+        private readonly bool _isSimpleType;
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="SqlTypeAttribute"/> class.
+        ///   Initializes a new instance of the <see cref="SqlTypeAttribute"/> class for a complex type.
         /// </summary>
         /// <param name="columns">The column definitions of the SQL type that the parameter has.</param>
         protected SqlTypeAttribute(params SqlColumn[] columns)
         {
             _columns = columns;
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="SqlTypeAttribute"/> class for a simple type.
+        /// </summary>
+        /// <param name="columnType">The type of the single column in the SQL type to map the simple type to.</param>
+        /// <param name="columnName">The name of the single column in the SQL type to map the simple type to.</param>
+        protected SqlTypeAttribute(string columnName, Type columnType)
+        {
+            _isSimpleType = true;
+            _columns = new[] { new SqlColumn(columnName, columnType) };
         }
 
         /// <summary>
@@ -74,16 +86,21 @@ namespace InoSoft.Tools.Data
         {
             DataTable table = CreateTable();
             var properties = new PropertyInfo[_columns.Length];
-            for (int i = 0; i < properties.Length; i++)
+
+            if (!_isSimpleType)
             {
-                properties[i] = typeof(T).GetProperty(_columns[i].Name);
+                for (int i = 0; i < properties.Length; i++)
+                {
+                    properties[i] = typeof(T).GetProperty(_columns[i].Name);
+                }
             }
+
             foreach (T item in items)
             {
                 var row = new object[properties.Length];
                 for (int i = 0; i < row.Length; i++)
                 {
-                    row[i] = properties[i].GetValue(item, null);
+                    row[i] = _isSimpleType ? item : properties[i].GetValue(item, null);
                 }
                 table.Rows.Add(row);
             }
