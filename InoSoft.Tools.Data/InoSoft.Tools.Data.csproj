@@ -51,6 +51,7 @@
     <Compile Include="SqlContext.cs" />
     <Compile Include="SqlQueryType.cs" />
     <Compile Include="SqlTypeAttribute.cs" />
+    <Compile Include="SqlXmlAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InoSoft.Tools\InoSoft.Tools.csproj">

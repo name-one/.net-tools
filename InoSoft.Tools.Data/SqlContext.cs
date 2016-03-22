@@ -369,6 +369,10 @@ namespace InoSoft.Tools.Data
 
                     // Convert the value to the target type.
                     Type type = property.UnderlyingType;
+                    if (value is string && property.Info.GetAttributes<SqlXmlAttribute>().Length > 0)
+                    {
+                        value = XmlHelper.Deserialize(type, (string)value) ?? DBNull.Value;
+                    }
                     value = value != DBNull.Value
                         ? type.IsEnum
                             ? Enum.ToObject(type, value)

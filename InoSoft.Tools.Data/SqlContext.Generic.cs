@@ -200,6 +200,12 @@ namespace InoSoft.Tools.Data
                             "new System.Data.SqlClient.SqlParameter(\"{0}\", {0}.HasValue ? (object){1}.Value : DBNull.Value)",
                             parameter.Name, paramCasted)));
                     }
+                    else if (parameter.GetAttributes<SqlXmlAttribute>().Length > 0)
+                    {
+                        invokeParamsCode.Add(new CodeSnippetExpression(String.Format(
+                            "new System.Data.SqlClient.SqlParameter(\"{0}\", System.Data.SqlDbType.Xml) {{ Value = {0} != null ? (object){1}.Serialize({0}) : DBNull.Value }}",
+                            parameter.Name, typeof(XmlHelper).FullName)));
+                    }
                     else if (parameter.ParameterType.IsArray
                         && (typeAttributes = parameter.GetAttributes<SqlTypeAttribute>()).Length > 0)
                     {
