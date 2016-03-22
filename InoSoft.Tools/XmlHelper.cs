@@ -9,6 +9,26 @@ namespace InoSoft.Tools
     public static class XmlHelper
     {
         /// <summary>
+        ///   Deserializes an object of the specified type from an XML string.
+        /// </summary>
+        /// <param name="xml">The XML string to deserialize an object from.</param>
+        /// <param name="type">The type to deserialize the object to.</param>
+        /// <returns>
+        ///   An object object of the specified type deserialized from the XML string.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="type"/> or <paramref name="xml"/> is <c>null</c>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">An error occurred during deserialization.</exception>
+        public static object Deserialize(Type type, string xml)
+        {
+            using (var reader = new StringReader(xml))
+            {
+                return new XmlSerializer(type).Deserialize(reader);
+            }
+        }
+
+        /// <summary>
         /// Deserializes an object from an XML data stream.
         /// </summary>
         /// <typeparam name="T">Type of the object to deserialize.</typeparam>
@@ -74,6 +94,56 @@ namespace InoSoft.Tools
             {
                 return FromXml<T>(response.GetResponseStream());
             }
+        }
+
+        /// <summary>
+        ///   Serializes an object to an XML string.
+        /// </summary>
+        /// <param name="item">The object to serialize.</param>
+        /// <returns>
+        ///   An XML string that represents the object.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">An error occurred during serialization.</exception>
+        public static string Serialize(object item)
+        {
+            return Serialize(item != null ? item.GetType() : typeof(object), item);
+        }
+
+        /// <summary>
+        ///   Serializes an object of the specified type to an XML string.
+        /// </summary>
+        /// <param name="type">The type to serialize the object to.</param>
+        /// <param name="item">The object to serialize.</param>
+        /// <returns>
+        ///   An XML string that represents the object.
+        /// </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> <c>null</c>.</exception>
+        /// <exception cref="InvalidOperationException">An error occurred during serialization.</exception>
+        public static string Serialize(Type type, object item)
+        {
+            using (var stringWriter = new StringWriter())
+            {
+                Serialize(type, item, stringWriter);
+                return stringWriter.ToString();
+            }
+        }
+
+        /// <summary>
+        ///   Serializes an object of the specified type as XML to a text writer.
+        /// </summary>
+        /// <param name="type">The type to serialize the object to.</param>
+        /// <param name="item">The object to serialize.</param>
+        /// <param name="writer">The text writer to serialize the object to.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="type"/> or <paramref name="writer"/> in <c>null</c>.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">An error occurred during serialization.</exception>
+        public static void Serialize(Type type, object item, TextWriter writer)
+        {
+            var serializer = new XmlSerializer(type);
+            var namespaces = new XmlSerializerNamespaces();
+            namespaces.Add("", "");
+            serializer.Serialize(writer, item, namespaces);
         }
 
         /// <summary>
