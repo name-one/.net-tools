@@ -300,10 +300,26 @@ namespace InoSoft.Tools.Data
             return classCode;
         }
 
-        private static string GetSchemaName(MemberInfo memberInfo)
+        private static string GetSchemaName(ICustomAttributeProvider attributeProvider)
         {
-            object[] attributes = memberInfo.GetCustomAttributes(typeof(SchemaAttribute), true);
-            return attributes.Length > 0 ? ((SchemaAttribute)attributes[0]).Name : null;
+            SchemaAttribute[] attributes = attributeProvider.GetAttributes<SchemaAttribute>();
+            return attributes.Length > 0 ? attributes[0].Name : null;
+        }
+
+        private static string GetSchemaName(Type type)
+        {
+            string name = GetSchemaName((ICustomAttributeProvider)type);
+            if (name != null) return name;
+
+            foreach (Type genericArgument in type.GetGenericArguments())
+            {
+                if (!genericArgument.IsInterface) continue;
+
+                name = GetSchemaName((ICustomAttributeProvider)genericArgument);
+                if (name != null) return name;
+            }
+
+            return null;
         }
     }
 }
