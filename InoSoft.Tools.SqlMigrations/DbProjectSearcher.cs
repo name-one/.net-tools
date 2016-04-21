@@ -19,7 +19,7 @@ namespace InoSoft.Tools.SqlMigrations
                 RegexOptions.IgnoreCase);
 
         private static readonly Regex PathRegex =
-            new Regex(@"<Build Include=""(?<path>(?<schema>[^.\\]*)\\(?<type>[^.\\]*)\\(?<name>[^.\\]*).sql)"" />",
+            new Regex(@"<Build Include=""(?<path>(?<schema>[^\\""]*)\\(?<type>[^\\""]*)\\(?<name>[^\\""]*).sql)"" />",
                 RegexOptions.IgnoreCase);
 
         private readonly string _directoryName;
